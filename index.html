@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 1.7.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -98,17 +98,17 @@
   <section id="adminModal" class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
     <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
     <div class="admin-content">
-      <div id="adminStats" class="admin-stats"></div>
+      <div id="adminStats" class="admin-stats"></div><div id="adminInsights" class="admin-insights"></div>
       <h3>إضافة منتج جديد</h3>
-      <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><textarea id="newProductDescription" placeholder="وصف المنتج" rows="2"></textarea><button class="primary-btn" type="submit">إضافة المنتج</button></form>
-      <h3>إدارة المنتجات وتفاصيلها</h3><div id="adminProducts" class="admin-list"></div>
+      <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><input id="newProductImage" type="url" placeholder="رابط صورة المنتج (اختياري)"><textarea id="newProductDescription" placeholder="وصف المنتج" rows="2"></textarea><button class="primary-btn" type="submit">إضافة المنتج</button></form>
+      <h3>إدارة المنتجات وتفاصيلها</h3><p class="admin-note">يمكنك إضافة رابط صورة مباشر للمنتج، وسيظهر بدل الإيموجي تلقائيًا.</p><div id="adminProducts" class="admin-list"></div>
       <h3>إدارة الطلبات</h3><div class="admin-filters"><select id="orderStatusFilter"><option value="all">كل الحالات</option><option value="جديد">جديد</option><option value="قيد التجهيز">قيد التجهيز</option><option value="تم الشحن">تم الشحن</option><option value="مكتمل">مكتمل</option><option value="ملغي">ملغي</option></select><button type="button" id="clearOrdersBtn">حذف الطلبات المكتملة</button></div><div id="adminOrders" class="admin-orders"></div>
       <p class="admin-note">هذه لوحة محلية على نفس الجهاز؛ الطلبات تُحفظ في متصفحك فقط.</p>
     </div>
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 1.7.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 </body>
 </html>

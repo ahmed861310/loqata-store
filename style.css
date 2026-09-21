@@ -190,3 +190,16 @@ body.modal-open{overflow:hidden}
 .admin-filters{display:flex;gap:8px;margin-bottom:12px}.admin-filters select{padding:9px;border:1px solid var(--border);border-radius:9px;font:inherit}.admin-filters button{color:#b91c1c}
 .status-pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;background:#e2e8f0}.status-new{background:#fef3c7}.status-progress{background:#dbeafe}.status-done{background:#dcfce7}.status-cancelled{background:#fee2e2}.order-status-editor{display:flex;align-items:center;gap:8px;margin:10px 0;font-weight:700}.order-status-editor select{padding:8px;border:1px solid var(--border);border-radius:8px;font:inherit}
 @media(max-width:700px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-product-grid{grid-template-columns:1fr 1fr}.admin-product-preview,.wide-field{grid-column:1/-1}.admin-actions{flex-wrap:wrap}.admin-filters{flex-direction:column}.admin-filters select,.admin-filters button{width:100%}}
+
+/* ===== v1.7.0 product images + sales insights ===== */
+.product-img,.detail-emoji,.cart-emoji,.admin-product-image{position:relative;overflow:hidden}
+.product-img-photo,.detail-emoji-photo,.cart-emoji-photo,.admin-product-image-photo{width:100%;height:100%;object-fit:cover;display:block}
+.product-img-fallback,.detail-emoji-fallback,.cart-emoji-fallback,.admin-product-image-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.detail-emoji-photo{max-height:280px;object-fit:contain}
+.cart-emoji{flex-shrink:0}
+.admin-product-image{width:48px;height:48px;flex-shrink:0;border-radius:10px;background:#f1f5f9;font-size:25px}
+.admin-insights{margin:0 0 18px}
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.insight-card,.top-products{border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,#f8fafc,#fff);padding:12px}
+.insight-card span{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.insight-card strong{font-size:17px}.top-products h4{margin:0 0 10px;font-size:14px}.top-product{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.top-product:last-child{border-bottom:0}
+@media(max-width:600px){.insight-grid{grid-template-columns:1fr}.admin-product-image{width:42px;height:42px}}
