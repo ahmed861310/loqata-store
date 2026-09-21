@@ -150,3 +150,15 @@ body.modal-open{overflow:hidden}
 .details-btn{width:100%;padding:10px;border:1px solid #dbe3ee;border-radius:12px;background:#fff;color:#0f172a;cursor:pointer;font-size:12px;font-weight:700;margin-bottom:8px}
 .details-btn:hover{background:#f8fafc}
 @media(max-width:600px){.product-modal{width:calc(100% - 20px);border-radius:18px}.product-details{padding:14px}.detail-emoji{min-height:150px;font-size:80px}.detail-content h3{font-size:20px}}
+
+/* ===== v1.3.1: clearly visible product-details action ===== */
+.card-body{display:flex;flex-direction:column;gap:8px}
+.card h3,.price{margin-bottom:0}
+.details-btn,.add-btn{display:flex;align-items:center;justify-content:center;min-height:42px;width:100%;font-weight:800;cursor:pointer}
+.details-btn{order:1;background:#fff;border:2px solid #0f172a;color:#0f172a;font-size:13px}
+.add-btn{order:2}
+.details-btn:active,.add-btn:active{transform:scale(.98)}
+@media(max-width:600px){
+  .details-btn,.add-btn{min-height:40px;font-size:12px;padding:9px 5px}
+  .card-body{gap:7px}
+}
