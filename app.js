@@ -71,11 +71,11 @@ function openAdmin(){
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
-$("accountForm")?.addEventListener("submit",e=>{e.preventDefault();customer={name:$("accountName").value.trim(),phone:$("accountPhone").value.trim(),address:$("accountAddress").value.trim()};saveCustomer();renderAccount();toast("تم حفظ بيانات الحساب");});
+
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const add=e.target.closest("[data-add]");if(add){addToCart(Number(add.dataset.add));return;}const details=e.target.closest("[data-details]");if(details){openProductDetails(Number(details.dataset.details));return;}const detailAdd=e.target.closest("[data-detail-add]");if(detailAdd){addToCart(Number(detailAdd.dataset.detailAdd));closeProductDetails();return;}const plus=e.target.closest("[data-plus]");if(plus){changeQty(Number(plus.dataset.plus),1);return;}const minus=e.target.closest("[data-minus]");if(minus){changeQty(Number(minus.dataset.minus),-1);return;}const remove=e.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return;}const setting=e.target.closest("[data-setting]");if(setting){handleSetting(setting.dataset.setting);return;}const favFilter=e.target.closest("[data-favorites-filter]");if(favFilter){favoritesOnly=!favoritesOnly;favFilter.classList.toggle("active",favoritesOnly);renderProducts();return;}const cat=e.target.closest(".cat");if(cat){document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));cat.classList.add("active");currentCategory=cat.dataset.category;renderProducts();return;}const saveProduct=e.target.closest("[data-save-product]");if(saveProduct){const id=Number(saveProduct.dataset.saveProduct);const p=products.find(x=>x.id===id);if(!p)return;document.querySelectorAll(`[data-product-id="${id}"]`).forEach(el=>{if(el.dataset.field==='price')p.price=Math.max(0,Number(el.value)||0);else if(el.dataset.field==='stock')p.stock=Math.max(0,Number(el.value)||0);else if(el.dataset.field)p[el.dataset.field]=el.value.trim();});p.name=p.name||'منتج بدون اسم';p.emoji=p.emoji||'🛍️';apiRequest(`/api/admin/products/${id}`,{method:'PATCH',body:JSON.stringify(p)}).then(saved=>{products=products.map(x=>x.id===id?saved:x);cart=cart.map(i=>i.id===id?{...i,...saved}:i);saveProducts();saveCart();renderProducts();renderCart();renderAdmin();toast('تم حفظ تفاصيل المنتج في قاعدة البيانات');}).catch(err=>toast(err.message));return;}const del=e.target.closest("[data-delete-product]");if(del){const id=Number(del.dataset.deleteProduct);apiRequest(`/api/admin/products/${id}`,{method:'DELETE'}).then(()=>{products=products.filter(p=>p.id!==id);cart=cart.filter(i=>i.id!==id);saveProducts();saveCart();renderProducts();renderCart();renderAdmin();toast('تم حذف المنتج من قاعدة البيانات');}).catch(err=>toast(err.message));return;}const delOrder=e.target.closest('[data-delete-order]');if(delOrder){const id=Number(delOrder.dataset.deleteOrder);apiRequest(`/api/admin/orders/${id}`,{method:'DELETE'}).then(()=>{orders=orders.filter(o=>o.id!==id);saveOrders();renderAdmin();toast('تم حذف الطلب من قاعدة البيانات');}).catch(err=>toast(err.message));return;}});
 document.addEventListener('change',e=>{const select=e.target.closest('[data-order-status-select]');if(select){const o=orders.find(x=>x.id===Number(select.dataset.orderStatusSelect));if(o){apiRequest(`/api/admin/orders/${o.id}`,{method:'PATCH',body:JSON.stringify({status:select.value})}).then(saved=>{o.status=saved.status;saveOrders();renderAdmin();toast('تم تحديث حالة الطلب في قاعدة البيانات');}).catch(err=>toast(err.message));}}if(e.target.id==='orderStatusFilter')renderAdmin();});
-$("searchInput").addEventListener("input",renderProducts);$("menuBtn").addEventListener("click",toggleSettingsMenu);$("accountForm")?.addEventListener("submit",e=>{e.preventDefault();customer={name:$("accountName").value.trim(),phone:$("accountPhone").value.trim(),address:$("accountAddress").value.trim()};saveCustomer();renderAccount();toast("تم حفظ بيانات الحساب");});
+$("searchInput").addEventListener("input",renderProducts);$("menuBtn").addEventListener("click",toggleSettingsMenu);
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{if(!e.target.closest(".topbar-actions"))closeSettingsMenu();});
 $("closeProduct").addEventListener("click",closeProductDetails);$("productOverlay").addEventListener("click",closeProductDetails);$("cartBtn").addEventListener("click",openCart);$("closeCart").addEventListener("click",closeCart);$("cartOverlay").addEventListener("click",closeCart);$("saveCart").addEventListener("click",()=>{saveCart();toast("تم حفظ السلة على هذا الجهاز");});$("orderWhatsApp").addEventListener("click",openCheckout);$("closeCheckout").addEventListener("click",closeCheckout);$("checkoutOverlay").addEventListener("click",closeCheckout);
@@ -124,3 +124,23 @@ loadAuth();
 
 // v2.5: تحميل المنتجات من قاعدة البيانات عند تشغيل المتجر
 (async function syncProductsFromServer(){try{const remote=await apiRequest("/api/products");if(Array.isArray(remote)&&remote.length){products=remote;saveProducts();renderProducts();}}catch(err){console.warn("تعذر الاتصال بقاعدة البيانات",err.message);}})();
+
+// v2.8.0: صفحة حساب العميل المرتبطة بقاعدة البيانات
+async function openCustomerAccount(){
+  if(!authenticatedUser){showAuth();return;}
+  try{
+    const profile=await apiRequest('/api/profile');
+    const mine=await apiRequest('/api/orders/mine');
+    authenticatedUser=profile.user;
+    $("accountName").value=authenticatedUser.name||'';
+    $("accountPhone").value=customer.phone||'';
+    $("accountAddress").value=customer.address||'';
+    $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p></details>`).join('')}`:'<p class="empty">لا توجد طلبات مرتبطة بحسابك حتى الآن.</p>';
+    $("accountModal").hidden=false;$("accountOverlay").classList.remove('hidden');document.body.classList.add('modal-open');
+  }catch(err){toast(err.message);}
+}
+$("closeAccount")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
+$("accountOverlay")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
+$("accountForm")?.addEventListener('submit',e=>{e.preventDefault();customer={...customer,name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();toast('تم حفظ بيانات التواصل على هذا الجهاز');});
+const previousHandleSetting=handleSetting;
+handleSetting=function(action){if(action==='account'){openCustomerAccount();return;}return previousHandleSetting(action);};
