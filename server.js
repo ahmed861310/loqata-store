@@ -13,7 +13,7 @@ const ORDER_STATUSES = new Set(['جديد','قيد التجهيز','تم الش�
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [] }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [] }, null, 2));
 }
 const readDb = () => JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
 const writeDb = db => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
@@ -50,13 +50,31 @@ async function api(req,res,url){
   if(url.startsWith('/api/admin/') && (!currentUser(req)||currentUser(req).role!=='admin')) return json(res,403,{error:'يجب تسجيل دخول المدير'});
   if(req.method==='GET' && url==='/api/profile'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,{user:publicUser(u)});}
   if(req.method==='GET'&&url==='/api/products'){return json(res,200,readDb().products);}
+  if(req.method==='POST'&&url==='/api/coupons/validate'){
+    const b=await body(req); const code=String(b.code||'').trim().toUpperCase(); const subtotal=Number(b.subtotal||0); const coupon=readDb().coupons.find(c=>c.code===code&&c.active!==false);
+    if(!coupon)return json(res,404,{error:'كود الخصم غير صحيح أو غير فعال'});
+    if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});
+    if(coupon.minSubtotal&&subtotal<Number(coupon.minSubtotal))return json(res,400,{error:`الحد الأدنى لاستخدام الكوبون هو ${coupon.minSubtotal}`});
+    const discount=coupon.type==='percent'?Math.min(subtotal,subtotal*Number(coupon.value)/100):Math.min(subtotal,Number(coupon.value));
+    return json(res,200,{code,discount,total:Math.max(0,subtotal-discount),label:coupon.label||'خصم'});
+  }
+  if(url==='/api/admin/coupons' && req.method==='GET'){return json(res,200,readDb().coupons||[]);}
+  if(url==='/api/admin/coupons' && req.method==='POST'){
+    const b=await body(req); const code=String(b.code||'').trim().toUpperCase(); const value=Number(b.value);
+    if(!code||!['percent','fixed'].includes(b.type)||!Number.isFinite(value)||value<=0)return json(res,400,{error:'بيانات الكوبون غير صحيحة'});
+    const db=readDb(); db.coupons=db.coupons||[]; if(db.coupons.some(c=>c.code===code))return json(res,409,{error:'الكوبون موجود بالفعل'});
+    const coupon={id:id('cpn'),code,type:b.type,value,minSubtotal:Math.max(0,Number(b.minSubtotal||0)),expiresAt:b.expiresAt||null,label:b.label||'خصم',active:true}; db.coupons.push(coupon);writeDb(db);return json(res,201,coupon);
+  }
+  if(url.startsWith('/api/admin/coupons/') && req.method==='DELETE'){
+    const couponId=url.split('/').pop(); const db=readDb(); const before=(db.coupons||[]).length; db.coupons=(db.coupons||[]).filter(c=>c.id!==couponId); if(db.coupons.length===before)return json(res,404,{error:'الكوبون غير موجود'});writeDb(db);return json(res,200,{ok:true});
+  }
   if(req.method==='POST'&&url==='/api/orders'){
     const u=currentUser(req); const b=await body(req);
     if(!b.name||!b.phone||!b.address||!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'بيانات الطلب غير مكتملة'});
-    const db=readDb(); const byId=new Map(db.products.map(p=>[String(p.id),p])); let total=0; const items=[];
+    const db=readDb(); const couponCode=String(b.couponCode||'').trim().toUpperCase(); const coupon=(db.coupons||[]).find(c=>c.code===couponCode&&c.active!==false); const byId=new Map(db.products.map(p=>[String(p.id),p])); let total=0; const items=[];
     for(const item of b.items){const p=byId.get(String(item.id));const qty=Number(item.qty);if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'});items.push({id:p.id,name:p.name,qty,price:Number(p.price||0)});total+=qty*Number(p.price||0);}
     for(const item of items){const p=byId.get(String(item.id));p.stock=Number(p.stock||0)-item.qty;}
-    const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),items,total,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
+    if(coupon){if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});const discount=coupon.type==='percent'?Math.min(total,total*Number(coupon.value)/100):Math.min(total,Number(coupon.value));total=Math.max(0,total-discount);} const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),items,total,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
   }
   if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
   if(req.method==='GET'&&url==='/api/notifications'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const notes=readDb().orders.filter(o=>o.userId===u.id).map(o=>({id:o.id,title:'تحديث طلبك',message:`الطلب #${o.id} حالته الآن: ${o.status}`,date:o.statusHistory?.at(-1)?.date||o.date,status:o.status}));return json(res,200,notes);}
