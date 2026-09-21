@@ -26,8 +26,9 @@ let customer = readJson("loqataCustomer", {name:"",phone:"",address:""});
 const ADMIN_PIN = "1234";
 let adminUnlocked = false;
 function saveCustomer(){localStorage.setItem("loqataCustomer",JSON.stringify(customer));}
+async function loadNotifications(){const box=$("accountNotifications");if(!box)return;try{const notes=await apiRequest('/api/notifications');box.innerHTML=notes.length?notes.map(n=>`<div class="order-card"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}<br><small>${escapeHtml(new Date(n.date).toLocaleString('ar-EG'))}</small></p></div>`).join(''):'<p class="empty">لا توجد إشعارات حتى الآن.</p>';const badge=$("notificationBadge");if(badge){badge.textContent=notes.length;badge.hidden=!notes.length;}}catch(e){box.innerHTML='<p class="empty">سجّل الدخول لعرض الإشعارات.</p>';}}
 function renderAccount(){$("accountName").value=customer.name||"";$("accountPhone").value=customer.phone||"";$("accountAddress").value=customer.address||"";const mine=customer.phone?orders.filter(o=>String(o.phone||"").replace(/\D/g,"")===String(customer.phone).replace(/\D/g,"")):[];$("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${o.id} — ${money(o.total)} — ${escapeHtml(o.status||"جديد")}</summary><p>${escapeHtml(o.date||"")}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join("<br>")}</p></details>`).join("")}`:`<p class="empty">لا توجد طلبات محفوظة لهذا الرقم.</p>`;}
-function openAccount(){renderAccount();$("accountModal").hidden=false;$("accountOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
+function openAccount(){renderAccount();loadNotifications();$("accountModal").hidden=false;$("accountOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
 function closeAccount(){$("accountModal").hidden=true;$("accountOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 const categoryNames = {electronics:"إلكترونيات",fashion:"ملابس",home:"المنزل"};
 function saveCart(){localStorage.setItem("loqataCart",JSON.stringify(cart));}
