@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لقطة | متجر إلكتروني</title>
+  <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">لقطة</div>
+    <button class="cart-btn" id="cartBtn" type="button" aria-label="فتح السلة">
+      🛒 السلة <span id="cartCount">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>خد لقطة قبل ما تروح عليك 👌</h1>
+      <p>منتجات مختارة بأسعار مناسبة، والطلب بسهولة عبر واتساب.</p>
+      <div class="search-wrap">
+        <input id="searchInput" type="search" placeholder="ابحث عن منتج..." autocomplete="off">
+      </div>
+    </section>
+
+    <section class="categories" aria-label="الأقسام">
+      <button class="cat active" data-category="all" type="button">الكل</button>
+      <button class="cat" data-category="electronics" type="button">إلكترونيات</button>
+      <button class="cat" data-category="fashion" type="button">ملابس</button>
+      <button class="cat" data-category="home" type="button">المنزل</button>
+    </section>
+
+    <section class="products-section">
+      <div class="section-head">
+        <h2>المنتجات</h2>
+        <span id="resultCount"></span>
+      </div>
+      <div id="products" class="products"></div>
+      <div id="emptyState" class="empty hidden">لا توجد منتجات مطابقة للبحث.</div>
+    </section>
+  </main>
+
+  <div id="cartOverlay" class="overlay hidden"></div>
+  <aside id="cartPanel" class="cart-panel" aria-label="سلة المشتريات">
+    <div class="cart-head">
+      <h2>سلة المشتريات</h2>
+      <button id="closeCart" class="icon-btn" type="button" aria-label="إغلاق">✕</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-footer">
+      <div class="total-row"><span>الإجمالي</span><strong id="cartTotal">0 ج.م</strong></div>
+      <button id="saveCart" class="secondary-btn" type="button">💾 حفظ السلة</button>
+      <button id="orderWhatsApp" class="primary-btn" type="button">📲 طلب عبر واتساب</button>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer>© 2026 لقطة — جميع الحقوق محفوظة</footer>
+  <script src="app.js"></script>
+</body>
+</html>
