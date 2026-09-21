@@ -20,7 +20,7 @@
         <button type="button" data-setting="clear-cart">🗑️ تفريغ السلة</button>
         <button type="button" data-setting="about">ℹ️ عن متجر لقطة</button>
         <button type="button" data-setting="contact">💬 تواصل معنا</button>
-        <button type="button" data-setting="admin">📊 لوحة التحكم</button>
+        <button type="button" data-setting="account">👤 حسابي</button><button type="button" data-setting="admin">📊 لوحة التحكم</button>
       </div>
     </div>
   </header>
@@ -95,6 +95,21 @@
   </section>
 
 
+  <div id="accountOverlay" class="overlay hidden"></div>
+  <section id="accountModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="accountTitle" hidden>
+    <div class="product-modal-head"><h2 id="accountTitle">👤 حسابي</h2><button id="closeAccount" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <div class="account-content">
+      <form id="accountForm" class="checkout-form">
+        <p class="checkout-note">احفظ بياناتك على هذا الجهاز لتسهيل الطلبات القادمة.</p>
+        <label for="accountName">الاسم الكامل</label><input id="accountName" required minlength="2" placeholder="اكتب اسمك">
+        <label for="accountPhone">رقم الهاتف</label><input id="accountPhone" required type="tel" pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
+        <label for="accountAddress">العنوان</label><textarea id="accountAddress" required minlength="5" rows="3" placeholder="العنوان بالتفصيل"></textarea>
+        <button class="primary-btn" type="submit">💾 حفظ البيانات</button>
+      </form>
+      <div id="accountOrders" class="admin-orders"></div>
+    </div>
+  </section>
+
   <div id="adminOverlay" class="overlay hidden"></div>
   <section id="adminModal" class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
     <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
@@ -109,7 +124,7 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 1.9.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 2.1.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 </body>
 </html>
