@@ -203,3 +203,6 @@ body.modal-open{overflow:hidden}
 .insight-card,.top-products{border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,#f8fafc,#fff);padding:12px}
 .insight-card span{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.insight-card strong{font-size:17px}.top-products h4{margin:0 0 10px;font-size:14px}.top-product{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.top-product:last-child{border-bottom:0}
 @media(max-width:600px){.insight-grid{grid-template-columns:1fr}.admin-product-image{width:42px;height:42px}}
+
+/* ===== v1.8.0 favorites, stock and backup ===== */
+.card{position:relative}.favorite-btn{position:absolute;top:10px;left:10px;width:36px;height:36px;border:1px solid #e2e8f0;border-radius:50%;background:#fff;color:#64748b;font-size:23px;line-height:1;cursor:pointer;z-index:2}.favorite-btn.is-favorite{color:#e11d48;background:#fff1f2}.stock-line{font-size:11px;color:#64748b;min-height:16px}.add-btn:disabled{opacity:.5;cursor:not-allowed}.admin-filters{flex-wrap:wrap}.admin-filters #exportDataBtn{color:#0f172a!important}
