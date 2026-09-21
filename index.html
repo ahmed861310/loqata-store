@@ -10,9 +10,18 @@
 <body>
   <header class="topbar">
     <div class="brand">لقطة</div>
-    <button class="cart-btn" id="cartBtn" type="button" aria-label="فتح السلة">
-      🛒 السلة <span id="cartCount">0</span>
-    </button>
+    <div class="topbar-actions">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="فتح قائمة الإعدادات" aria-expanded="false" aria-controls="settingsMenu">⋮</button>
+      <button class="cart-btn" id="cartBtn" type="button" aria-label="فتح السلة">
+        🛒 السلة <span id="cartCount">0</span>
+      </button>
+      <div class="settings-menu" id="settingsMenu" hidden>
+        <button type="button" data-setting="home">🏠 الرئيسية</button>
+        <button type="button" data-setting="clear-cart">🗑️ تفريغ السلة</button>
+        <button type="button" data-setting="about">ℹ️ عن متجر لقطة</button>
+        <button type="button" data-setting="contact">💬 تواصل معنا</button>
+      </div>
+    </div>
   </header>
 
   <main>

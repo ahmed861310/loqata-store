@@ -4,9 +4,9 @@ body{margin:0;font-family:Arial,"Noto Sans Arabic",sans-serif;background:var(--b
 button,input{font:inherit}
 .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#fff;border-bottom:1px solid var(--border)}
 .brand{font-size:28px;font-weight:900}
-.cart-btn,.primary-btn,.secondary-btn,.cat{border:0;cursor:pointer}
-.cart-btn{background:#111827;color:#fff;padding:10px 14px;border-radius:12px}
-.cart-btn span{display:inline-flex;min-width:22px;height:22px;align-items:center;justify-content:center;background:#fff;color:#111827;border-radius:50%;font-size:12px;margin-right:4px}
+.cart-btn,.primary-btn,.secondary-btn,.cat,.menu-btn{border:0;cursor:pointer}
+.topbar-actions{position:relative;display:flex;align-items:center;gap:8px}.menu-btn{width:42px;height:42px;border-radius:12px;background:#f3f4f6;color:#111827;font-size:28px;line-height:1;font-weight:900}.cart-btn{background:#111827;color:#fff;padding:10px 14px;border-radius:12px}
+.settings-menu{position:absolute;top:50px;right:0;z-index:60;min-width:190px;padding:8px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:-4px 12px 30px rgba(0,0,0,.14)}.settings-menu[hidden]{display:none}.settings-menu button{display:block;width:100%;padding:11px 12px;border:0;border-radius:9px;background:#fff;color:#111827;text-align:right;cursor:pointer}.settings-menu button:hover{background:#f3f4f6}.cart-btn span{display:inline-flex;min-width:22px;height:22px;align-items:center;justify-content:center;background:#fff;color:#111827;border-radius:50%;font-size:12px;margin-right:4px}
 .hero{padding:34px 18px 24px;text-align:center;background:linear-gradient(180deg,#fff,#f6f7fb)}
 .hero h1{margin:0 0 10px;font-size:30px}
 .hero p{margin:0 auto 18px;color:var(--muted);max-width:600px}

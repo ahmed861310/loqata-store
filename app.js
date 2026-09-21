@@ -103,6 +103,38 @@ function toast(msg) {
   window.__toast = setTimeout(() => el.classList.remove("show"), 1800);
 }
 
+function closeSettingsMenu() {
+  const menu = $("settingsMenu");
+  menu.hidden = true;
+  $("menuBtn").setAttribute("aria-expanded", "false");
+}
+
+function toggleSettingsMenu() {
+  const menu = $("settingsMenu");
+  menu.hidden = !menu.hidden;
+  $("menuBtn").setAttribute("aria-expanded", String(!menu.hidden));
+}
+
+function handleSetting(action) {
+  closeSettingsMenu();
+  if (action === "home") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else if (action === "clear-cart") {
+    if (!cart.length) {
+      toast("السلة فارغة بالفعل");
+      return;
+    }
+    cart = [];
+    save();
+    renderCart();
+    toast("تم تفريغ السلة");
+  } else if (action === "about") {
+    toast("لقطة — متجر إلكتروني لمنتجات مختارة");
+  } else if (action === "contact") {
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent("مرحبًا، أريد التواصل مع متجر لقطة")}`, "_blank", "noopener,noreferrer");
+  }
+}
+
 function addToCart(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
@@ -149,6 +181,12 @@ document.addEventListener("click", e => {
     renderCart();
   }
 
+  const setting = e.target.closest("[data-setting]");
+  if (setting) {
+    handleSetting(setting.dataset.setting);
+    return;
+  }
+
   const cat = e.target.closest(".cat");
   if (cat) {
     document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
@@ -159,6 +197,10 @@ document.addEventListener("click", e => {
 });
 
 $("searchInput").addEventListener("input", renderProducts);
+$("menuBtn").addEventListener("click", toggleSettingsMenu);
+document.addEventListener("click", e => {
+  if (!e.target.closest(".topbar-actions")) closeSettingsMenu();
+});
 $("cartBtn").addEventListener("click", openCart);
 $("closeCart").addEventListener("click", closeCart);
 $("cartOverlay").addEventListener("click", closeCart);
