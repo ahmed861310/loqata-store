@@ -73,6 +73,25 @@
     <div id="productDetails" class="product-details"></div>
   </section>
 
+  <div id="checkoutOverlay" class="overlay hidden"></div>
+  <section id="checkoutModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle" hidden>
+    <div class="product-modal-head">
+      <h2 id="checkoutTitle">تأكيد الطلب</h2>
+      <button id="closeCheckout" class="icon-btn" type="button" aria-label="إغلاق">✕</button>
+    </div>
+    <form id="checkoutForm" class="checkout-form">
+      <p class="checkout-note">اكتب بياناتك لمراجعة الطلب قبل إرساله عبر واتساب.</p>
+      <label for="customerName">الاسم الكامل</label>
+      <input id="customerName" name="customerName" type="text" required minlength="2" placeholder="اكتب اسمك">
+      <label for="customerPhone">رقم الهاتف</label>
+      <input id="customerPhone" name="customerPhone" type="tel" required pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
+      <label for="customerAddress">العنوان</label>
+      <textarea id="customerAddress" name="customerAddress" required minlength="5" rows="3" placeholder="المحافظة، المنطقة، الشارع"></textarea>
+      <div class="checkout-summary" id="checkoutSummary"></div>
+      <button class="primary-btn" type="submit">📲 تأكيد وإرسال الطلب</button>
+    </form>
+  </section>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <footer>© 2026 لقطة — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>

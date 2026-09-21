@@ -229,7 +229,21 @@ document.addEventListener("click", e => {
     document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
     cat.classList.add("active");
     currentCategory = cat.dataset.category;
-    renderProducts();
+    $("closeCheckout").addEventListener("click", closeCheckout);
+$("checkoutOverlay").addEventListener("click", closeCheckout);
+$("checkoutForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("customerName").value.trim();
+  const phone = $("customerPhone").value.trim();
+  const address = $("customerAddress").value.trim();
+  if (!name || !phone || !address) {
+    toast("من فضلك أكمل بيانات الطلب");
+    return;
+  }
+  sendOrder(name, phone, address);
+});
+
+renderProducts();
   }
 });
 
@@ -243,6 +257,7 @@ $("productOverlay").addEventListener("click", closeProductDetails);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
     closeProductDetails();
+    closeCheckout();
     closeSettingsMenu();
   }
 });
@@ -255,15 +270,42 @@ $("saveCart").addEventListener("click", () => {
   toast("تم حفظ السلة على هذا الجهاز");
 });
 
-$("orderWhatsApp").addEventListener("click", () => {
+function openCheckout() {
   if (!cart.length) {
     toast("أضف منتجًا إلى السلة أولًا");
     return;
   }
+  const summary = cart.map(i => `<div>${escapeHtml(i.name)} × ${i.qty} — ${money(i.qty * i.price)}</div>`).join("");
+  $("checkoutSummary").innerHTML = `<strong>ملخص الطلب</strong>${summary}<hr><strong>الإجمالي: ${money(cartTotal())}</strong>`;
+  $("checkoutModal").hidden = false;
+  $("checkoutOverlay").classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeCheckout() {
+  $("checkoutModal").hidden = true;
+  $("checkoutOverlay").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
+function sendOrder(name, phone, address) {
   const lines = cart.map(i => `- ${i.name} × ${i.qty} = ${money(i.qty * i.price)}`);
-  const message = `مرحبًا، أريد طلب المنتجات التالية من لقطة:\n${lines.join("\n")}\n\nالإجمالي: ${money(cartTotal())}`;
+  const message = `مرحبًا، أريد تأكيد طلبي من متجر لقطة:
+
+الاسم: ${name}
+الهاتف: ${phone}
+العنوان: ${address}
+
+المنتجات:
+${lines.join("\n")}
+
+الإجمالي: ${money(cartTotal())}`;
   window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-});
+  toast("تم تجهيز الطلب للإرسال عبر واتساب");
+  closeCheckout();
+}
+
+$("orderWhatsApp").addEventListener("click", openCheckout);
 
 renderProducts();
 renderCart();

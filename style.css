@@ -162,3 +162,16 @@ body.modal-open{overflow:hidden}
   .details-btn,.add-btn{min-height:40px;font-size:12px;padding:9px 5px}
   .card-body{gap:7px}
 }
+
+
+/* ===== v1.4.0 checkout and order confirmation ===== */
+.checkout-modal{position:fixed;z-index:46;top:50%;left:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 24px));max-height:calc(100vh - 28px);overflow:auto;background:#fff;border:1px solid var(--border);border-radius:22px;box-shadow:0 24px 70px rgba(15,23,42,.25)}
+.checkout-modal[hidden]{display:none}
+.checkout-form{padding:18px}
+.checkout-form label{display:block;margin:12px 0 6px;font-weight:700;font-size:14px}
+.checkout-form input,.checkout-form textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;outline:0;background:#fff;font:inherit}
+.checkout-form input:focus,.checkout-form textarea:focus{border-color:#16a34a}
+.checkout-note{margin:0 0 12px;color:var(--muted);line-height:1.8;font-size:13px}
+.checkout-summary{margin-top:16px;padding:13px;border-radius:14px;background:#f8fafc;border:1px solid var(--border);line-height:2;font-size:13px}
+.checkout-summary hr{border:0;border-top:1px solid var(--border);margin:8px 0}
+@media(max-width:600px){.checkout-modal{width:calc(100% - 16px);border-radius:18px}.checkout-form{padding:14px}}
