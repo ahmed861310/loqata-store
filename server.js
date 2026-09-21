@@ -47,8 +47,20 @@ async function api(req,res,url){
   }
   if(url.startsWith('/api/admin/') && (!currentUser(req)||currentUser(req).role!=='admin')) return json(res,403,{error:'يجب تسجيل دخول المدير'});
   if(req.method==='GET'&&url==='/api/products'){return json(res,200,readDb().products);}
-  if(req.method==='POST'&&url==='/api/products'){const b=await body(req);const db=readDb();const p={...b,id:id('prd'),createdAt:new Date().toISOString()};db.products.push(p);writeDb(db);return json(res,201,p);}
+  if(req.method==='POST'&&url==='/api/orders'){
+    const u=currentUser(req); const b=await body(req);
+    if(!b.name||!b.phone||!b.address||!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'بيانات الطلب غير مكتملة'});
+    const db=readDb(); const byId=new Map(db.products.map(p=>[String(p.id),p])); let total=0; const items=[];
+    for(const item of b.items){const p=byId.get(String(item.id));const qty=Number(item.qty);if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'});items.push({id:p.id,name:p.name,qty,price:Number(p.price||0)});total+=qty*Number(p.price||0);}
+    for(const item of items){const p=byId.get(String(item.id));p.stock=Number(p.stock||0)-item.qty;}
+    const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),items,total,status:'جديد'};db.orders.unshift(order);writeDb(db);return json(res,201,order);
+  }
+  if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
   if(req.method==='GET'&&url==='/api/admin/orders'){return json(res,200,readDb().orders);}
+  if(req.method==='PATCH'&&url.startsWith('/api/admin/orders/')){const orderId=url.split('/').pop();const b=await body(req);const db=readDb();const o=db.orders.find(x=>String(x.id)===orderId);if(!o)return json(res,404,{error:'الطلب غير موجود'});if(b.status)o.status=b.status;writeDb(db);return json(res,200,o);}
+  if(req.method==='DELETE'&&url.startsWith('/api/admin/products/')){const productId=url.split('/').pop();const db=readDb();const before=db.products.length;db.products=db.products.filter(p=>String(p.id)!==productId);if(db.products.length===before)return json(res,404,{error:'المنتج غير موجود'});writeDb(db);return json(res,200,{ok:true});}
+  if(req.method==='PATCH'&&url.startsWith('/api/admin/products/')){const productId=url.split('/').pop();const b=await body(req);const db=readDb();const p=db.products.find(x=>String(x.id)===productId);if(!p)return json(res,404,{error:'المنتج غير موجود'});Object.assign(p,b);writeDb(db);return json(res,200,p);} 
+
   return json(res,404,{error:'المسار غير موجود'});
 }
 function publicUser(u){return {id:u.id,name:u.name,email:u.email,role:u.role,createdAt:u.createdAt};}
