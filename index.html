@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 1.9.0</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 2.4.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -95,6 +95,20 @@
   </section>
 
 
+  <div id="authOverlay" class="overlay hidden"></div>
+  <section id="authModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
+    <div class="product-modal-head"><h2 id="authTitle">🔐 حساب العميل</h2><button id="closeAuth" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <form id="authForm" class="checkout-form">
+      <label for="authName">الاسم</label><input id="authName" placeholder="اسمك الكامل">
+      <label for="authEmail">البريد الإلكتروني</label><input id="authEmail" type="email" required placeholder="name@example.com">
+      <label for="authPassword">كلمة المرور</label><input id="authPassword" type="password" minlength="8" required placeholder="8 أحرف على الأقل">
+      <button class="primary-btn" id="authSubmit" type="submit">تسجيل الدخول</button>
+      <button class="secondary-btn" id="authMode" type="button">إنشاء حساب جديد</button>
+      <button class="secondary-btn" id="authLogout" type="button" hidden>تسجيل الخروج</button>
+      <p id="authMessage" class="admin-note"></p>
+    </form>
+  </section>
+
   <div id="accountOverlay" class="overlay hidden"></div>
   <section id="accountModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="accountTitle" hidden>
     <div class="product-modal-head"><h2 id="accountTitle">👤 حسابي</h2><button id="closeAccount" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
@@ -134,7 +148,7 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 2.2.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 2.4.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 </body>
 </html>

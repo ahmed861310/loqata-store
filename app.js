@@ -92,3 +92,32 @@ function importData(file){if(!file)return;const reader=new FileReader();reader.o
 function exportOrdersCSV(){const rows=[["رقم الطلب","الاسم","الهاتف","العنوان","الحالة","الإجمالي","التاريخ"],...orders.map(o=>[o.id,o.name,o.phone,o.address,o.status,o.total,o.date])];const csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='loqata-orders.csv';a.click();URL.revokeObjectURL(url);toast('تم تصدير الطلبات CSV');}
 function exportData(){const data={products,orders,cart,favorites,exportedAt:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="loqata-backup.json";a.click();URL.revokeObjectURL(url);toast("تم تصدير نسخة احتياطية");}
 $("exportDataBtn")?.addEventListener("click",exportData);$("importDataInput")?.addEventListener("change",e=>importData(e.target.files[0]));$("adminOrderSearch")?.addEventListener("input",e=>{adminOrderQuery=e.target.value.trim().toLowerCase();renderAdmin();});
+
+
+// v2.4.0: اتصال واجهة العميل بخادم المصادقة الحقيقي
+let authMode = "login";
+let authenticatedUser = null;
+async function apiRequest(url, options={}){
+  const response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error || "حدث خطأ في الاتصال بالخادم");
+  return data;
+}
+function showAuth(){
+  authMode="login"; $("authName").value=""; $("authEmail").value=""; $("authPassword").value="";
+  $("authTitle").textContent=authenticatedUser?`👤 ${authenticatedUser.name}`:"🔐 حساب العميل";
+  $("authName").hidden=!!authenticatedUser; $("authPassword").hidden=!!authenticatedUser;
+  $("authEmail").disabled=!!authenticatedUser; $("authEmail").value=authenticatedUser?.email||"";
+  $("authSubmit").hidden=!!authenticatedUser; $("authMode").hidden=!!authenticatedUser; $("authLogout").hidden=!authenticatedUser;
+  $("authMessage").textContent=authenticatedUser?"أنت مسجل الدخول بالفعل.":"";
+  $("authModal").hidden=false; $("authOverlay").classList.remove("hidden"); document.body.classList.add("modal-open");
+}
+function closeAuth(){ $("authModal").hidden=true; $("authOverlay").classList.add("hidden"); document.body.classList.remove("modal-open"); }
+async function loadAuth(){try{authenticatedUser=(await apiRequest('/api/auth/me')).user;}catch{authenticatedUser=null;}}
+$("closeAuth")?.addEventListener("click",closeAuth); $("authOverlay")?.addEventListener("click",closeAuth);
+$("authMode")?.addEventListener("click",()=>{authMode=authMode==="login"?"register":"login";$("authTitle").textContent=authMode==="login"?"🔐 تسجيل الدخول":"📝 إنشاء حساب";$("authName").hidden=authMode==="login";$("authSubmit").textContent=authMode==="login"?"تسجيل الدخول":"إنشاء الحساب";$("authMode").textContent=authMode==="login"?"إنشاء حساب جديد":"لدي حساب بالفعل";$("authMessage").textContent="";});
+$("authForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const payload={email:$("authEmail").value.trim(),password:$("authPassword").value};if(authMode==="register")payload.name=$("authName").value.trim();const result=await apiRequest(authMode==="login"?'/api/auth/login':'/api/auth/register',{method:'POST',body:JSON.stringify(payload)});authenticatedUser=result.user;toast('تم تسجيل الدخول بنجاح');closeAuth();}catch(err){$("authMessage").textContent=err.message;}});
+$("authLogout")?.addEventListener("click",async()=>{try{await apiRequest('/api/auth/logout',{method:'POST'});authenticatedUser=null;toast('تم تسجيل الخروج');closeAuth();}catch(err){toast(err.message);}});
+const originalHandleSetting=handleSetting;
+handleSetting=function(action){if(action==="account"){showAuth();return;}return originalHandleSetting(action);};
+loadAuth();
