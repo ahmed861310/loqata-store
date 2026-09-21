@@ -1,12 +1,12 @@
 const products = [
-  {id:1,name:"سماعة بلوتوث",price:450,category:"electronics",emoji:"🎧"},
-  {id:2,name:"ساعة ذكية",price:850,category:"electronics",emoji:"⌚"},
-  {id:3,name:"تيشيرت كاجوال",price:320,category:"fashion",emoji:"👕"},
-  {id:4,name:"شنطة ظهر",price:390,category:"fashion",emoji:"🎒"},
-  {id:5,name:"كوب حراري",price:220,category:"home",emoji:"☕"},
-  {id:6,name:"مصباح مكتب",price:280,category:"home",emoji:"💡"},
-  {id:7,name:"شاحن سريع",price:250,category:"electronics",emoji:"🔌"},
-  {id:8,name:"حافظة هاتف",price:150,category:"electronics",emoji:"📱"}
+  {id:1,name:"سماعة بلوتوث",price:450,category:"electronics",emoji:"🎧",description:"سماعة بلوتوث لاسلكية بصوت واضح وتصميم مريح للاستخدام اليومي."},
+  {id:2,name:"ساعة ذكية",price:850,category:"electronics",emoji:"⌚",description:"ساعة ذكية أنيقة لمتابعة الوقت والنشاط اليومي مع تصميم عملي."},
+  {id:3,name:"تيشيرت كاجوال",price:320,category:"fashion",emoji:"👕",description:"تيشيرت كاجوال مريح مناسب للخروجات والاستخدام اليومي."},
+  {id:4,name:"شنطة ظهر",price:390,category:"fashion",emoji:"🎒",description:"شنطة ظهر عملية لحمل الأدوات والمستلزمات بسهولة."},
+  {id:5,name:"كوب حراري",price:220,category:"home",emoji:"☕",description:"كوب حراري مناسب للمشروبات الساخنة والباردة أثناء التنقل."},
+  {id:6,name:"مصباح مكتب",price:280,category:"home",emoji:"💡",description:"مصباح مكتب بإضاءة مناسبة للمذاكرة والعمل والقراءة."},
+  {id:7,name:"شاحن سريع",price:250,category:"electronics",emoji:"🔌",description:"شاحن سريع للاستخدام اليومي مع تصميم صغير وسهل الحمل."},
+  {id:8,name:"حافظة هاتف",price:150,category:"electronics",emoji:"📱",description:"حافظة هاتف خفيفة تساعد على حماية الهاتف من الخدوش والصدمات البسيطة."}
 ];
 
 const whatsappNumber = "201149902302";
@@ -55,6 +55,7 @@ function renderProducts() {
       <div class="card-body">
         <h3>${escapeHtml(p.name)}</h3>
         <div class="price">${money(p.price)}</div>
+        <button class="details-btn" data-details="${p.id}" type="button">عرض التفاصيل</button>
         <button class="add-btn" data-add="${p.id}" type="button">أضف للسلة</button>
       </div>
     </article>
@@ -135,6 +136,29 @@ function handleSetting(action) {
   }
 }
 
+function openProductDetails(id) {
+  const product = products.find(p => p.id === id);
+  if (!product) return;
+  $("productDetails").innerHTML = `
+    <div class="detail-emoji" aria-hidden="true">${escapeHtml(product.emoji)}</div>
+    <div class="detail-content">
+      <h3>${escapeHtml(product.name)}</h3>
+      <div class="detail-price">${money(product.price)}</div>
+      <p>${escapeHtml(product.description || "منتج مختار من متجر لقطة.")}</p>
+      <button class="primary-btn" type="button" data-detail-add="${product.id}">🛒 أضف للسلة</button>
+    </div>
+  `;
+  $("productModal").hidden = false;
+  $("productOverlay").classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeProductDetails() {
+  $("productModal").hidden = true;
+  $("productOverlay").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
 function addToCart(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
@@ -168,6 +192,19 @@ document.addEventListener("click", e => {
   const add = e.target.closest("[data-add]");
   if (add) addToCart(Number(add.dataset.add));
 
+  const details = e.target.closest("[data-details]");
+  if (details) {
+    openProductDetails(Number(details.dataset.details));
+    return;
+  }
+
+  const detailAdd = e.target.closest("[data-detail-add]");
+  if (detailAdd) {
+    addToCart(Number(detailAdd.dataset.detailAdd));
+    closeProductDetails();
+    return;
+  }
+
   const plus = e.target.closest("[data-plus]");
   if (plus) changeQty(Number(plus.dataset.plus), 1);
 
@@ -200,6 +237,14 @@ $("searchInput").addEventListener("input", renderProducts);
 $("menuBtn").addEventListener("click", toggleSettingsMenu);
 document.addEventListener("click", e => {
   if (!e.target.closest(".topbar-actions")) closeSettingsMenu();
+});
+$("closeProduct").addEventListener("click", closeProductDetails);
+$("productOverlay").addEventListener("click", closeProductDetails);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    closeProductDetails();
+    closeSettingsMenu();
+  }
 });
 $("cartBtn").addEventListener("click", openCart);
 $("closeCart").addEventListener("click", closeCart);

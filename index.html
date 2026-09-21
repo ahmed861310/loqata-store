@@ -64,6 +64,15 @@
     </div>
   </aside>
 
+  <div id="productOverlay" class="overlay hidden"></div>
+  <section id="productModal" class="product-modal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle" hidden>
+    <div class="product-modal-head">
+      <h2 id="productModalTitle">تفاصيل المنتج</h2>
+      <button id="closeProduct" class="icon-btn" type="button" aria-label="إغلاق تفاصيل المنتج">✕</button>
+    </div>
+    <div id="productDetails" class="product-details"></div>
+  </section>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <footer>© 2026 لقطة — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
