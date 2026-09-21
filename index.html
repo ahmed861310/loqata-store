@@ -111,6 +111,16 @@
   </section>
 
   <div id="adminOverlay" class="overlay hidden"></div>
+  <section id="adminLoginModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle" hidden>
+    <div class="product-modal-head"><h2 id="adminLoginTitle">🔐 دخول الإدارة</h2><button id="closeAdminLogin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <form id="adminLoginForm" class="checkout-form">
+      <p class="checkout-note">أدخل رمز الإدارة المحلي لفتح لوحة التحكم.</p>
+      <label for="adminPin">رمز الدخول</label>
+      <input id="adminPin" type="password" inputmode="numeric" minlength="4" required placeholder="رمز الإدارة">
+      <button class="primary-btn" type="submit">دخول</button>
+      <p class="admin-note">تنبيه: هذا قفل محلي للواجهة فقط، وليس نظام حماية لخادم حقيقي.</p>
+    </form>
+  </section>
   <section id="adminModal" class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
     <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
     <div class="admin-content">
@@ -124,7 +134,7 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 2.1.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 2.2.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 </body>
 </html>
