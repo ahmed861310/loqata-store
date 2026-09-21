@@ -20,6 +20,7 @@
         <button type="button" data-setting="clear-cart">🗑️ تفريغ السلة</button>
         <button type="button" data-setting="about">ℹ️ عن متجر لقطة</button>
         <button type="button" data-setting="contact">💬 تواصل معنا</button>
+        <button type="button" data-setting="admin">📊 لوحة التحكم</button>
       </div>
     </div>
   </header>
@@ -90,6 +91,20 @@
       <div class="checkout-summary" id="checkoutSummary"></div>
       <button class="primary-btn" type="submit">📲 تأكيد وإرسال الطلب</button>
     </form>
+  </section>
+
+
+  <div id="adminOverlay" class="overlay hidden"></div>
+  <section id="adminModal" class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
+    <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <div class="admin-content">
+      <div id="adminStats" class="admin-stats"></div>
+      <h3>إضافة منتج جديد</h3>
+      <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><button class="primary-btn" type="submit">إضافة المنتج</button></form>
+      <h3>إدارة المنتجات والأسعار</h3><div id="adminProducts" class="admin-list"></div>
+      <h3>الطلبات المحفوظة</h3><div id="adminOrders" class="admin-orders"></div>
+      <p class="admin-note">هذه لوحة محلية على نفس الجهاز؛ الطلبات تُحفظ في متصفحك فقط.</p>
+    </div>
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
