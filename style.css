@@ -206,3 +206,6 @@ body.modal-open{overflow:hidden}
 
 /* ===== v1.8.0 favorites, stock and backup ===== */
 .card{position:relative}.favorite-btn{position:absolute;top:10px;left:10px;width:36px;height:36px;border:1px solid #e2e8f0;border-radius:50%;background:#fff;color:#64748b;font-size:23px;line-height:1;cursor:pointer;z-index:2}.favorite-btn.is-favorite{color:#e11d48;background:#fff1f2}.stock-line{font-size:11px;color:#64748b;min-height:16px}.add-btn:disabled{opacity:.5;cursor:not-allowed}.admin-filters{flex-wrap:wrap}.admin-filters #exportDataBtn{color:#0f172a!important}
+
+/* ===== v1.9.0 favorites + backup import + order search ===== */
+.favorites-filter.active{background:#ffe4e6!important;color:#be123c!important;border-color:#fda4af!important}.import-label{padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:700}.admin-filters input[type="search"]{padding:9px;border:1px solid var(--border);border-radius:9px;font:inherit;min-width:170px;flex:1}.detail-content .primary-btn:disabled{opacity:.5;cursor:not-allowed}
