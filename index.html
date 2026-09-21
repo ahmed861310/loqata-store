@@ -100,9 +100,9 @@
     <div class="admin-content">
       <div id="adminStats" class="admin-stats"></div>
       <h3>إضافة منتج جديد</h3>
-      <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><button class="primary-btn" type="submit">إضافة المنتج</button></form>
-      <h3>إدارة المنتجات والأسعار</h3><div id="adminProducts" class="admin-list"></div>
-      <h3>الطلبات المحفوظة</h3><div id="adminOrders" class="admin-orders"></div>
+      <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><textarea id="newProductDescription" placeholder="وصف المنتج" rows="2"></textarea><button class="primary-btn" type="submit">إضافة المنتج</button></form>
+      <h3>إدارة المنتجات وتفاصيلها</h3><div id="adminProducts" class="admin-list"></div>
+      <h3>إدارة الطلبات</h3><div class="admin-filters"><select id="orderStatusFilter"><option value="all">كل الحالات</option><option value="جديد">جديد</option><option value="قيد التجهيز">قيد التجهيز</option><option value="تم الشحن">تم الشحن</option><option value="مكتمل">مكتمل</option><option value="ملغي">ملغي</option></select><button type="button" id="clearOrdersBtn">حذف الطلبات المكتملة</button></div><div id="adminOrders" class="admin-orders"></div>
       <p class="admin-note">هذه لوحة محلية على نفس الجهاز؛ الطلبات تُحفظ في متصفحك فقط.</p>
     </div>
   </section>
