@@ -209,3 +209,8 @@ body.modal-open{overflow:hidden}
 
 /* ===== v1.9.0 favorites + backup import + order search ===== */
 .favorites-filter.active{background:#ffe4e6!important;color:#be123c!important;border-color:#fda4af!important}.import-label{padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:700}.admin-filters input[type="search"]{padding:9px;border:1px solid var(--border);border-radius:9px;font:inherit;min-width:170px;flex:1}.detail-content .primary-btn:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* v3.2.0 product offers */
+.offer-price{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.offer-price strong{font-size:1.08em}.old-price{text-decoration:line-through;color:#94a3b8;font-size:.82em}.discount-badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:800}.detail-price .offer-price{justify-content:flex-start}.admin-product-grid{grid-template-columns:1.2fr 1.4fr 1fr 1fr 1fr 1fr}
+@media(max-width:700px){.admin-product-grid{grid-template-columns:1fr 1fr}}
