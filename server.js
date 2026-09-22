@@ -155,6 +155,40 @@ async function api(req,res,url){
     const customerOrders=db.orders.filter(o=>o.userId===u.id); return json(res,200,{customer:{...publicUser(u),phone:customerOrders[0]?.phone||''},orders:customerOrders});
   }
   if(req.method==='POST'&&url==='/api/admin/products'){const b=await body(req);if(!b.name||!Number.isFinite(Number(b.price))||!Number.isFinite(Number(b.stock)))return json(res,400,{error:'بيانات المنتج غير مكتملة'});const db=readDb();const product={id:Date.now(),name:String(b.name).trim(),price:Number(b.price),stock:Number(b.stock),category:b.category||'home',emoji:b.emoji||'🛍️',image:b.image||'',description:b.description||''};db.products.push(product);writeDb(db);return json(res,201,product);}
+  // v4.4.0: إدارة الشحن والتتبع
+  const shippingMatch=url.match(/^\/api\/admin\/orders\/([^/]+)\/shipping$/);
+  if(shippingMatch && req.method==='GET'){
+    const orderId=decodeURIComponent(shippingMatch[1]); const db=readDb(); const o=db.orders.find(x=>String(x.id)===orderId);
+    if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    return json(res,200,{orderId:o.id,shipping:{carrier:o.shippingCarrier||'',trackingNumber:o.trackingNumber||'',trackingUrl:o.trackingUrl||'',status:o.shippingStatus||'preparing',shippedAt:o.shippedAt||null,deliveredAt:o.deliveredAt||null},timeline:Array.isArray(o.shippingTimeline)?o.shippingTimeline:[]});
+  }
+  if(shippingMatch && req.method==='PATCH'){
+    const orderId=decodeURIComponent(shippingMatch[1]); const b=await body(req); const db=readDb(); const o=db.orders.find(x=>String(x.id)===orderId);
+    if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    const allowed=new Set(['preparing','shipped','in_transit','delivered','returned']);
+    const status=b.status===undefined?(o.shippingStatus||'preparing'):String(b.status);
+    if(!allowed.has(status))return json(res,400,{error:'حالة الشحن غير صالحة'});
+    const carrier=b.carrier===undefined?(o.shippingCarrier||''):String(b.carrier).trim();
+    const tracking=b.trackingNumber===undefined?(o.trackingNumber||''):String(b.trackingNumber).trim();
+    const trackingUrl=b.trackingUrl===undefined?(o.trackingUrl||''):String(b.trackingUrl).trim();
+    if(trackingUrl && !/^https:\/\//i.test(trackingUrl)) return json(res,400,{error:'رابط التتبع يجب أن يبدأ بـ https://'});
+    o.shippingCarrier=carrier; o.trackingNumber=tracking; o.trackingUrl=trackingUrl; o.shippingStatus=status;
+    const now=new Date().toISOString(); o.shippingTimeline=Array.isArray(o.shippingTimeline)?o.shippingTimeline:[];
+    const old=o.shippingTimeline.at(-1)?.status || 'preparing';
+    if(status!==old || b.note){ o.shippingTimeline.push({id:id('ship_evt'),status,title:({preparing:'تجهيز الشحنة',shipped:'تم الشحن',in_transit:'الشحنة في الطريق',delivered:'تم التسليم',returned:'مرتجع'})[status],note:String(b.note||'').trim(),date:now,actorName:'مدير المتجر'}); }
+    if(status==='shipped'&&!o.shippedAt)o.shippedAt=now;
+    if(status==='delivered')o.deliveredAt=o.deliveredAt||now;
+    if(status==='shipped' && o.status!=='تم الشحن'){o.status='تم الشحن';o.statusHistory=Array.isArray(o.statusHistory)?o.statusHistory:[];o.statusHistory.push({status:o.status,date:now});}
+    if(status==='delivered' && o.status!=='مكتمل'){o.status='مكتمل';o.statusHistory=Array.isArray(o.statusHistory)?o.statusHistory:[];o.statusHistory.push({status:o.status,date:now});}
+    o.updatedAt=now; writeDb(db); return json(res,200,{order:o,shipping:{carrier,trackingNumber:tracking,trackingUrl,status,shippedAt:o.shippedAt||null,deliveredAt:o.deliveredAt||null},timeline:o.shippingTimeline});
+  }
+  const customerTrackMatch=url.match(/^\/api\/orders\/([^/]+)\/tracking$/);
+  if(customerTrackMatch && req.method==='GET'){
+    const u=currentUser(req); if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});
+    const orderId=decodeURIComponent(customerTrackMatch[1]); const db=readDb(); const o=db.orders.find(x=>String(x.id)===orderId&&x.userId===u.id);
+    if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    return json(res,200,{orderId:o.id,status:o.status,shipping:{carrier:o.shippingCarrier||'',trackingNumber:o.trackingNumber||'',trackingUrl:o.trackingUrl||'',status:o.shippingStatus||'preparing',shippedAt:o.shippedAt||null,deliveredAt:o.deliveredAt||null},timeline:Array.isArray(o.shippingTimeline)?o.shippingTimeline:[]});
+  }
   if(req.method==='GET'&&url.startsWith('/api/admin/orders/')&&url.endsWith('/details')){
     const orderId=url.split('/')[4]; const db=readDb(); const o=db.orders.find(x=>String(x.id)===String(orderId));
     if(!o)return json(res,404,{error:'الطلب غير موجود'});

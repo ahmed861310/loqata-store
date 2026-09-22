@@ -32,7 +32,7 @@ const ADMIN_PIN = "1234";
 let adminUnlocked = false;
 function saveCustomer(){localStorage.setItem("loqataCustomer",JSON.stringify(customer));}
 async function loadNotifications(){const box=$("accountNotifications");if(!box)return;try{const notes=await apiRequest('/api/notifications');box.innerHTML=notes.length?notes.map(n=>`<div class="order-card"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}<br><small>${escapeHtml(new Date(n.date).toLocaleString('ar-EG'))}</small></p></div>`).join(''):'<p class="empty">لا توجد إشعارات حتى الآن.</p>';const badge=$("notificationBadge");if(badge){badge.textContent=notes.length;badge.hidden=!notes.length;}}catch(e){box.innerHTML='<p class="empty">سجّل الدخول لعرض الإشعارات.</p>';}}
-function renderAccount(){$("accountName").value=customer.name||"";$("accountPhone").value=customer.phone||"";$("accountAddress").value=customer.address||"";const mine=customer.phone?orders.filter(o=>String(o.phone||"").replace(/\D/g,"")===String(customer.phone).replace(/\D/g,"")):[];$("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${o.id} — ${money(o.total)} — ${escapeHtml(o.status||"جديد")}</summary><p>${escapeHtml(o.date||"")}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join("<br>")}</p></details>`).join("")}`:`<p class="empty">لا توجد طلبات محفوظة لهذا الرقم.</p>`;}
+function renderAccount(){$("accountName").value=customer.name||"";$("accountPhone").value=customer.phone||"";$("accountAddress").value=customer.address||"";const mine=customer.phone?orders.filter(o=>String(o.phone||"").replace(/\D/g,"")===String(customer.phone).replace(/\D/g,"")):[];$("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${o.id} — ${money(o.total)} — ${escapeHtml(o.status||"جديد")}</summary><p>${escapeHtml(o.date||"")}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join("<br>")}</p><button type="button" class="secondary-btn small-btn" data-track-order="${escapeHtml(o.id)}">🚚 تتبع الشحنة</button></details>`).join("")}`:`<p class="empty">لا توجد طلبات محفوظة لهذا الرقم.</p>`;}
 function openAccount(){renderAccount();loadNotifications();$("accountModal").hidden=false;$("accountOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
 function closeAccount(){$("accountModal").hidden=true;$("accountOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 const categoryNames = {electronics:"إلكترونيات",fashion:"ملابس",home:"المنزل"};
@@ -146,7 +146,7 @@ function renderAdminOrderDetails(data){
   $("adminOrderDetails").innerHTML=`
     <div class="order-detail-grid">
       <div class="order-detail-card"><h3>📦 بيانات الطلب</h3><p><strong>رقم الطلب:</strong> #${escapeHtml(o.id)}</p><p><strong>التاريخ:</strong> ${escapeHtml(o.date||"")}</p><p><strong>العميل:</strong> ${escapeHtml(o.name||"")}</p><p><strong>الهاتف:</strong> ${escapeHtml(o.phone||"")}</p><p><strong>العنوان:</strong> ${escapeHtml(o.address||"")}</p></div>
-      <div class="order-detail-card"><h3>💳 الدفع والشحن</h3><p><strong>طريقة الدفع:</strong> ${escapeHtml(o.paymentMethodName||o.paymentMethod||"غير محدد")}</p><p><strong>حالة الدفع:</strong> <span class="status-pill">${escapeHtml(o.paymentStatus||"غير محدد")}</span></p><p><strong>منطقة الشحن:</strong> ${escapeHtml(o.shippingZoneName||"غير محددة")}</p><p><strong>شركة الشحن:</strong> ${escapeHtml(o.shippingCarrier||"غير محددة")}</p><p><strong>رقم التتبع:</strong> ${escapeHtml(o.trackingNumber||"غير موجود")}</p></div>
+      <div class="order-detail-card"><h3>💳 الدفع والشحن</h3><p><strong>طريقة الدفع:</strong> ${escapeHtml(o.paymentMethodName||o.paymentMethod||"غير محدد")}</p><p><strong>حالة الدفع:</strong> <span class="status-pill">${escapeHtml(o.paymentStatus||"غير محدد")}</span></p><p><strong>منطقة الشحن:</strong> ${escapeHtml(o.shippingZoneName||"غير محددة")}</p><p><strong>شركة الشحن:</strong> ${escapeHtml(o.shippingCarrier||"غير محددة")}</p><p><strong>رقم التتبع:</strong> ${escapeHtml(o.trackingNumber||"غير موجود")}</p><p><strong>حالة الشحن:</strong> ${escapeHtml(({preparing:"قيد التجهيز",shipped:"تم الشحن",in_transit:"في الطريق",delivered:"تم التسليم",returned:"مرتجع"})[o.shippingStatus]||"قيد التجهيز")}</p>${o.trackingUrl?`<p><a class="secondary-btn small-btn" href="${escapeHtml(o.trackingUrl)}" target="_blank" rel="noopener">🔗 فتح رابط التتبع</a></p>`:""}</div>
     </div>
     <div class="order-detail-card"><h3>🛒 المنتجات</h3><div class="table-scroll"><table class="order-detail-table"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${items||'<tr><td colspan="4">لا توجد منتجات</td></tr>'}</tbody></table></div>
       <div class="detail-totals"><span>قبل الخصم: <b>${money(o.subtotal??o.total)}</b></span><span>الخصم: <b>${money(o.discount||0)}</b></span><span>الشحن: <b>${money(o.shippingFee||0)}</b></span><strong>الإجمالي النهائي: ${money(o.total)}</strong></div>
@@ -155,13 +155,17 @@ function renderAdminOrderDetails(data){
       <label>الحالة<select id="detailStatus"><option ${o.status==="جديد"?"selected":""}>جديد</option><option ${o.status==="قيد التجهيز"?"selected":""}>قيد التجهيز</option><option ${o.status==="تم الشحن"?"selected":""}>تم الشحن</option><option ${o.status==="مكتمل"?"selected":""}>مكتمل</option><option ${o.status==="ملغي"?"selected":""}>ملغي</option></select></label>
       <label>حالة الدفع<select id="detailPaymentStatus"><option value="pending" ${o.paymentStatus==="pending"?"selected":""}>معلق</option><option value="paid" ${o.paymentStatus==="paid"?"selected":""}>مدفوع</option><option value="failed" ${o.paymentStatus==="failed"?"selected":""}>فشل</option></select></label>
       <label>شركة الشحن<input id="detailCarrier" value="${escapeHtml(o.shippingCarrier||"")}"></label>
-      <label>رقم التتبع<input id="detailTracking" value="${escapeHtml(o.trackingNumber||"")}"></label>
+      <label>رقم التتبع<input id="detailTracking" value="${escapeHtml(o.trackingNumber||"")}" placeholder="مثال: 123456789"></label>
+      <label>حالة الشحن<select id="detailShippingStatus"><option value="preparing" ${(o.shippingStatus||"preparing")==="preparing"?"selected":""}>قيد التجهيز</option><option value="shipped" ${o.shippingStatus==="shipped"?"selected":""}>تم الشحن</option><option value="in_transit" ${o.shippingStatus==="in_transit"?"selected":""}>في الطريق</option><option value="delivered" ${o.shippingStatus==="delivered"?"selected":""}>تم التسليم</option><option value="returned" ${o.shippingStatus==="returned"?"selected":""}>مرتجع</option></select></label>
+      <label>رابط التتبع<input id="detailTrackingUrl" type="url" value="${escapeHtml(o.trackingUrl||"")}" placeholder="https://..."></label>
+      <label>ملاحظة الشحن<input id="detailShippingNote" placeholder="اختياري: وصلت لمخزن الشركة"></label>
       <button type="button" class="primary-btn" id="saveOrderDetails">💾 حفظ التحديث</button><button type="button" class="secondary-btn" id="printOrderDetails">🖨️ طباعة</button>
     </div></div>
     <div class="order-detail-card"><h3>🕐 سجل الطلب</h3><div class="timeline">${history}</div></div>
     <div class="order-detail-card"><h3>📝 ملاحظات الإدارة</h3><div>${notesHtml}</div><form id="orderNoteForm" class="note-form"><textarea id="newOrderNote" rows="3" placeholder="اكتب ملاحظة داخلية..."></textarea><button class="secondary-btn" type="submit">إضافة ملاحظة</button></form></div>`;
   $("saveOrderDetails").onclick=async()=>{
     try{
+      const shipping=await apiRequest(`/api/admin/orders/${encodeURIComponent(adminOrderDetailsId)}/shipping`,{method:"PATCH",body:JSON.stringify({carrier:$("detailCarrier").value.trim(),trackingNumber:$("detailTracking").value.trim(),trackingUrl:$("detailTrackingUrl").value.trim(),status:$("detailShippingStatus").value,note:$("detailShippingNote").value.trim()})});
       const saved=await apiRequest(`/api/admin/orders/${encodeURIComponent(adminOrderDetailsId)}/details`,{method:"PATCH",body:JSON.stringify({status:$("detailStatus").value,paymentStatus:$("detailPaymentStatus").value,shippingCarrier:$("detailCarrier").value.trim(),trackingNumber:$("detailTracking").value.trim()})});
       orders=orders.map(x=>String(x.id)===String(saved.id)?saved:x);saveOrders();renderAdmin();renderAdminOrderDetails({order:saved,timeline:saved.timeline||saved.statusHistory||[],notes:saved.adminNotes||[]});toast("تم تحديث الطلب");
     }catch(err){toast(err.message);}
@@ -169,6 +173,16 @@ function renderAdminOrderDetails(data){
   $("printOrderDetails").onclick=()=>window.print();
   $("orderNoteForm").onsubmit=async e=>{e.preventDefault();const text=$("newOrderNote").value.trim();if(!text)return toast("اكتب الملاحظة أولًا");try{const data=await apiRequest(`/api/admin/orders/${encodeURIComponent(adminOrderDetailsId)}/notes`,{method:"POST",body:JSON.stringify({text})});renderAdminOrderDetails(data);toast("تمت إضافة الملاحظة");}catch(err){toast(err.message);}};
 }
+async function openCustomerTracking(orderId){
+  try{
+    const d=await apiRequest(`/api/orders/${encodeURIComponent(orderId)}/tracking`);
+    const labels={preparing:"قيد التجهيز",shipped:"تم الشحن",in_transit:"في الطريق",delivered:"تم التسليم",returned:"مرتجع"};
+    const lines=(d.timeline||[]).map(e=>`<div class="timeline-item"><span class="timeline-dot"></span><div><strong>${escapeHtml(e.title||labels[e.status]||e.status||'تحديث')}</strong><p>${escapeHtml(e.note||'')}</p><small>${escapeHtml(new Date(e.date||Date.now()).toLocaleString('ar-EG'))}</small></div></div>`).join('')||'<p class="empty">لم تُسجل تحديثات شحن بعد.</p>';
+    const link=d.shipping.trackingUrl?`<a class="primary-btn small-btn" href="${escapeHtml(d.shipping.trackingUrl)}" target="_blank" rel="noopener">🔗 تتبع لدى شركة الشحن</a>`:'';
+    const box=$('accountOrders'); box.insertAdjacentHTML('afterbegin',`<div class="order-detail-card customer-tracking"><h3>🚚 تتبع الطلب #${escapeHtml(d.orderId)}</h3><p><strong>الحالة:</strong> ${escapeHtml(labels[d.shipping.status]||d.shipping.status)}</p><p><strong>شركة الشحن:</strong> ${escapeHtml(d.shipping.carrier||'غير محددة')}<br><strong>رقم التتبع:</strong> ${escapeHtml(d.shipping.trackingNumber||'غير متوفر')}</p>${link}<div class="timeline">${lines}</div></div>`);
+  }catch(err){toast(err.message);}
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-track-order]');if(t)openCustomerTracking(t.dataset.trackOrder);});
 function closeAdminOrderDetails(){const m=$("adminOrderDetailsModal");if(m)m.hidden=true;adminOrderDetailsId=null;document.body.classList.remove("modal-open");}
 async function apiRequest(url, options={}){
   const response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
@@ -218,7 +232,7 @@ async function openCustomerAccount(){
     $("accountName").value=authenticatedUser.name||'';
     $("accountPhone").value=customer.phone||'';
     $("accountAddress").value=customer.address||'';
-    $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p></details>`).join('')}`:'<p class="empty">لا توجد طلبات مرتبطة بحسابك حتى الآن.</p>';
+    $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p><button type="button" class="secondary-btn small-btn" data-track-order="${escapeHtml(o.id)}">🚚 تتبع الشحنة</button></details>`).join('')}`:'<p class="empty">لا توجد طلبات مرتبطة بحسابك حتى الآن.</p>';
     $("accountModal").hidden=false;$("accountOverlay").classList.remove('hidden');document.body.classList.add('modal-open');
   }catch(err){toast(err.message);}
 }

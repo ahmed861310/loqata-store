@@ -247,3 +247,6 @@ body.modal-open{overflow:hidden}
 .note-form{display:grid;gap:8px;margin-top:12px}
 @media(max-width:700px){.admin-order-details-modal{inset:0;border-radius:0;max-height:100vh}.order-detail-grid,.detail-actions{grid-template-columns:1fr}.admin-order-details-body{padding:12px}}
 @media print{body>*:not(#adminOrderDetailsModal){display:none!important}.admin-order-details-modal{position:static!important;display:block!important;max-height:none!important;box-shadow:none!important;border:0!important}.admin-order-details-body{padding:0}}
+
+/* v4.4.0 shipping tracking */
+.customer-tracking{border-style:dashed}.customer-tracking .primary-btn{display:inline-block;margin:6px 0 12px;text-decoration:none}
