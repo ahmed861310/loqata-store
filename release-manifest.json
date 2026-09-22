@@ -1,0 +1,6 @@
+{
+  "version": "5.7.0",
+  "purpose": "full order/payment flow validation release",
+  "source": "loqata-v5.6.0-payment-ready.zip",
+  "manual_production_payment_test_required": true
+}
