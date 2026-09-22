@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { createPaymentService } = require('./payment-service');
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -15,6 +16,7 @@ const OTP_TTL_MS = 1000 * 60 * 5;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_RESEND_MS = 1000 * 60;
 const OTP_MAX_PER_HOUR = 5;
+const paymentService = createPaymentService();
 const DEFAULT_SHIPPING = { zones: [{id:'cairo',name:'القاهرة',fee:40},{id:'giza',name:'الجيزة',fee:50},{id:'alexandria',name:'الإسكندرية',fee:60},{id:'other',name:'محافظات أخرى',fee:80}], freeShippingThreshold:1000 };
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -92,6 +94,9 @@ async function api(req,res,url){
   if(req.method==='GET' && url==='/api/profile'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,{user:publicUser(u)});}
   if(req.method==='GET'&&url==='/api/products'){return json(res,200,readDb().products);}
   if(req.method==='GET'&&url==='/api/shipping-settings'){const s=readDb().shipping||DEFAULT_SHIPPING;return json(res,200,s);}
+  if(req.method==='GET'&&url==='/api/payments/config'){return json(res,200,{provider:paymentService.provider,currency:paymentService.currency,methods:paymentService.methods()});}
+  if(req.method==='POST'&&url==='/api/payments/intents'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);if(String(b.paymentMethod||'')!=='card')return json(res,400,{error:'هذه العملية مخصصة للدفع الإلكتروني'});const amount=Number(b.amount);if(!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'مبلغ الدفع غير صحيح'});const result=await paymentService.createIntent({orderId:String(b.orderId||''),amount});if(result.status==='not_configured')return json(res,503,result);return json(res,501,result);}
+  if(req.method==='POST'&&url==='/api/payments/webhook'){let raw='';req.on('data',c=>raw+=c);await new Promise(resolve=>req.on('end',resolve));const signature=req.headers['x-payment-signature'];if(!paymentService.verifyWebhook(raw,signature))return json(res,401,{error:'توقيع webhook غير صالح'});return json(res,200,{received:true});}
   if(req.method==='POST'&&url==='/api/coupons/validate'){
     const b=await body(req); const code=String(b.code||'').trim().toUpperCase(); const subtotal=Number(b.subtotal||0); const coupon=readDb().coupons.find(c=>c.code===code&&c.active!==false);
     if(!coupon)return json(res,404,{error:'كود الخصم غير صحيح أو غير فعال'});
