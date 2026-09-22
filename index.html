@@ -89,7 +89,7 @@
       <input id="customerPhone" name="customerPhone" type="tel" required pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
       <label for="shippingZone">منطقة التوصيل</label>
       <select id="shippingZone" name="shippingZone" required></select>
-      <fieldset class="payment-methods"><legend>طريقة الدفع</legend><label><input type="radio" name="paymentMethod" value="cod" checked> 💵 الدفع عند الاستلام</label><p class="checkout-note">سيتم دفع قيمة الطلب كاملة عند استلامه.</p></fieldset>
+      <fieldset class="payment-methods"><legend>طريقة الدفع</legend><label><input type="radio" name="paymentMethod" value="cod" checked> 💵 الدفع عند الاستلام</label><p class="checkout-note">سيتم دفع قيمة الطلب كاملة عند استلامه.</p><label><input type="radio" name="paymentMethod" value="card"> 💳 الدفع الإلكتروني</label><p class="checkout-note">وضع اختبار فقط — لا يتم خصم أموال حقيقية.</p></fieldset>
       <label for="customerAddress">العنوان</label>
       <textarea id="customerAddress" name="customerAddress" required minlength="5" rows="3" placeholder="المنطقة، الشارع، رقم العقار"></textarea>
       <label for="couponCode">كود الخصم (اختياري)</label><input id="couponCode" name="couponCode" type="text" placeholder="أدخل كود الخصم"><button id="applyCouponBtn" type="button">تطبيق الكوبون</button><p id="couponMessage" class="checkout-note"></p><div class="checkout-summary" id="checkoutSummary"></div>
@@ -102,7 +102,7 @@
   <section id="otpModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="otpTitle" hidden>
     <div class="product-modal-head"><h2 id="otpTitle">تأكيد رقم الهاتف</h2><button id="closeOtp" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
     <form id="otpForm" class="checkout-form">
-      <p class="checkout-note">أرسلنا رمز تحقق من 6 أرقام إلى رقم هاتفك. أدخل الرمز لتأكيد طلب الدفع عند الاستلام.</p>
+      <p class="checkout-note">أرسلنا رمز تحقق من 6 أرقام إلى رقم هاتفك. أدخل الرمز لتأكيد رقم الهاتف قبل اعتماد الطلب.</p>
       <label for="otpCode">رمز التحقق</label>
       <input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9٠-٩]{6}" required placeholder="••••••">
       <p id="otpMessage" class="checkout-note"></p>
@@ -167,5 +167,11 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <footer>© 2026 لقطة — الإصدار 3.4.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
+
+  <div id="paymentDemoOverlay" class="overlay hidden"></div>
+  <section id="paymentDemoModal" class="checkout-modal" role="dialog" aria-modal="true" hidden>
+    <div class="product-modal-head"><h2>💳 الدفع الإلكتروني — وضع الاختبار</h2></div>
+    <div class="checkout-form"><p id="paymentDemoText" class="checkout-note">هذه محاكاة فقط ولن يتم خصم أي مبلغ حقيقي.</p><button id="demoPaySuccess" class="primary-btn" type="button">✅ محاكاة دفع ناجح</button><button id="demoPayFail" class="secondary-btn" type="button">❌ محاكاة فشل الدفع</button></div>
+  </section>
 </body>
 </html>

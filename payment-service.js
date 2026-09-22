@@ -26,7 +26,7 @@ function paymobHmac(payload, secret) {
 }
 
 function createPaymentService() {
-  const provider = String(process.env.PAYMENT_PROVIDER || 'none').toLowerCase();
+  const provider = String(process.env.PAYMENT_PROVIDER || (process.env.NODE_ENV === 'production' ? 'none' : 'demo')).toLowerCase();
   const currency = process.env.PAYMENT_CURRENCY || 'EGP';
 
   const paymob = {
@@ -45,10 +45,15 @@ function createPaymentService() {
     methods() {
       return [
         { id: 'cod', name: 'الدفع عند الاستلام', online: false, enabled: true },
-        { id: 'card', name: 'الدفع الإلكتروني', online: true, enabled: provider === 'paymob' }
+        { id: 'card', name: 'الدفع الإلكتروني', online: true, enabled: provider === 'paymob' || provider === 'demo' }
       ];
     },
     async createIntent({ orderId, amount, billingData = {}, items = [] }) {
+      if (provider === 'demo') {
+        const cents = Math.round(Number(amount) * 100);
+        if (!Number.isInteger(cents) || cents <= 0) return { status: 'invalid_amount' };
+        return { status: 'created', provider: 'demo', orderId: String(orderId), intentionId: `demo_${crypto.randomBytes(6).toString('hex')}`, checkoutUrl: `/payment-demo?orderId=${encodeURIComponent(orderId)}`, clientSecret: null, publicKey: null };
+      }
       if (provider !== 'paymob') {
         return { status: 'not_configured', message: 'بوابة الدفع الإلكتروني غير مفعلة بعد' };
       }
