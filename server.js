@@ -21,11 +21,11 @@ const DEFAULT_SHIPPING = { zones: [{id:'cairo',name:'القاهرة',fee:40},{id
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING, otpChallenges: [], notifications: [] }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING, otpChallenges: [], notifications: [], campaigns: [] }, null, 2));
 }
-const readDb = () => { const db=JSON.parse(fs.readFileSync(DB_FILE,'utf8')); if(!db.shipping) db.shipping=DEFAULT_SHIPPING; if(!Array.isArray(db.notifications)) db.notifications=[]; if(!db.notificationSettings) db.notificationSettings=DEFAULT_NOTIFICATION_SETTINGS; if(!db.notificationTemplates) db.notificationTemplates=DEFAULT_NOTIFICATION_TEMPLATES; return db; };
-const DEFAULT_NOTIFICATION_SETTINGS={customer:{order_created:true,order_status:true,shipping_update:true,payment_update:true},admin:{new_order:true,order_status:true,shipping_update:true,payment_update:true}};
-const DEFAULT_NOTIFICATION_TEMPLATES={new_order:{title:'طلب جديد',message:'تم استلام طلب جديد #{orderId} بقيمة {total} ج.م.'},order_created:{title:'تم استلام طلبك',message:'تم إنشاء الطلب #{orderId} بقيمة {total} ج.م بنجاح.'},order_status:{title:'تحديث حالة الطلب',message:'الطلب #{orderId}: الحالة الآن {status}.'},shipping_update:{title:'تحديث شحنتك',message:'الطلب #{orderId}: حالة الشحن {shippingStatus}{tracking}.'},payment_update:{title:'تحديث الدفع',message:'الطلب #{orderId}: حالة الدفع {paymentStatus}.'}};
+const readDb = () => { const db=JSON.parse(fs.readFileSync(DB_FILE,'utf8')); if(!db.shipping) db.shipping=DEFAULT_SHIPPING; if(!Array.isArray(db.notifications)) db.notifications=[]; if(!Array.isArray(db.campaigns)) db.campaigns=[]; if(!db.notificationSettings) db.notificationSettings=DEFAULT_NOTIFICATION_SETTINGS; if(!db.notificationTemplates) db.notificationTemplates=DEFAULT_NOTIFICATION_TEMPLATES; return db; };
+const DEFAULT_NOTIFICATION_SETTINGS={customer:{order_created:true,order_status:true,shipping_update:true,payment_update:true},admin:{new_order:true,order_status:true,shipping_update:true,payment_update:true,campaign_created:true}};
+const DEFAULT_NOTIFICATION_TEMPLATES={new_order:{title:'طلب جديد',message:'تم استلام طلب جديد #{orderId} بقيمة {total} ج.م.'},order_created:{title:'تم استلام طلبك',message:'تم إنشاء الطلب #{orderId} بقيمة {total} ج.م بنجاح.'},order_status:{title:'تحديث حالة الطلب',message:'الطلب #{orderId}: الحالة الآن {status}.'},shipping_update:{title:'تحديث شحنتك',message:'الطلب #{orderId}: حالة الشحن {shippingStatus}{tracking}.'},payment_update:{title:'تحديث الدفع',message:'الطلب #{orderId}: حالة الدفع {paymentStatus}.'},campaign_created:{title:'حملة جديدة',message:'تم إنشاء حملة جديدة: {campaignTitle}.'}};
 const fillTemplate=(text,vars)=>String(text||'').replace(/\{(\w+)\}/g,(_,k)=>vars[k]??'');
 const addNotification = (db, data) => { const role=data.role==='admin'?'admin':'customer'; const type=String(data.type||''); if(db.notificationSettings?.[role]?.[type]===false)return; const t=db.notificationTemplates?.[type]||{}; const vars=data.vars||{}; db.notifications.push({id:id('ntf'),read:false,createdAt:new Date().toISOString(),title:fillTemplate(data.title||t.title,vars),message:fillTemplate(data.message||t.message,vars),...data,role,type,title:fillTemplate(data.title||t.title,vars),message:fillTemplate(data.message||t.message,vars)}); if(db.notifications.length>2000)db.notifications=db.notifications.slice(-2000); };
 const writeDb = db => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
@@ -100,6 +100,11 @@ async function api(req,res,url){
 
   if(req.method==='GET' && url==='/api/profile'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,{user:publicUser(u)});}
   if(req.method==='GET'&&url==='/api/products'){return json(res,200,readDb().products);}
+  if(req.method==='GET'&&url==='/api/campaigns'){
+    const db=readDb(); const now=Date.now();
+    const items=(db.campaigns||[]).filter(c=>c.active!==false&&(!c.startsAt||new Date(c.startsAt).getTime()<=now)&&(!c.endsAt||new Date(c.endsAt).getTime()>=now)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    return json(res,200,items);
+  }
   if(req.method==='GET'&&url==='/api/shipping-settings'){const s=readDb().shipping||DEFAULT_SHIPPING;return json(res,200,s);}
   if(req.method==='GET'&&url==='/api/payments/config'){return json(res,200,{provider:paymentService.provider,currency:paymentService.currency,methods:paymentService.methods()});}
   if(req.method==='POST'&&url==='/api/payments/intents'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);if(String(b.paymentMethod||'')!=='card')return json(res,400,{error:'هذه العملية مخصصة للدفع الإلكتروني'});const amount=Number(b.amount);if(!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'مبلغ الدفع غير صحيح'});const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId)&&(!o.userId||o.userId===u.id));if(!order)return json(res,404,{error:'الطلب غير موجود'});const result=await paymentService.createIntent({orderId:String(b.orderId||''),amount,billingData:b.billingData||{},items:Array.isArray(b.items)?b.items:[]});if(result.status==='not_configured')return json(res,503,result);if(result.status!=='created')return json(res,502,result);order.paymentStatus='pending';order.paymentProvider=result.provider;order.paymentIntentId=result.intentionId||null;order.paymentUpdatedAt=new Date().toISOString();writeDb(db);return json(res,201,result);}
@@ -114,6 +119,25 @@ async function api(req,res,url){
     return json(res,200,{code,discount,total:Math.max(0,subtotal-discount),label:coupon.label||'خصم'});
   }
   if(url==='/api/admin/coupons' && req.method==='GET'){return json(res,200,readDb().coupons||[]);}
+  if(url==='/api/admin/campaigns' && req.method==='GET'){return json(res,200,readDb().campaigns||[]);}
+  if(url==='/api/admin/campaigns' && req.method==='POST'){
+    const b=await body(req); const title=String(b.title||'').trim(), message=String(b.message||'').trim();
+    if(!title||!message)return json(res,400,{error:'عنوان الحملة ورسالتها مطلوبان'});
+    const startsAt=b.startsAt||null, endsAt=b.endsAt||null;
+    if(startsAt&&endsAt&&new Date(startsAt)>=new Date(endsAt))return json(res,400,{error:'تاريخ نهاية الحملة يجب أن يكون بعد البداية'});
+    const db=readDb(); db.campaigns=db.campaigns||[];
+    const campaign={id:id('cmp'),title,message,ctaLabel:String(b.ctaLabel||'').trim(),couponCode:String(b.couponCode||'').trim().toUpperCase()||null,startsAt,endsAt,active:b.active!==false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    db.campaigns.unshift(campaign);
+    addNotification(db,{role:'admin',type:'campaign_created',title:'تم إنشاء حملة جديدة',message:`تم إنشاء الحملة: ${campaign.title}.`});
+    writeDb(db); return json(res,201,campaign);
+  }
+  if(url.startsWith('/api/admin/campaigns/') && req.method==='PATCH'){
+    const campaignId=url.split('/').pop(); const b=await body(req); const db=readDb(); const c=(db.campaigns||[]).find(x=>x.id===campaignId); if(!c)return json(res,404,{error:'الحملة غير موجودة'});
+    if(b.title!==undefined)c.title=String(b.title).trim(); if(b.message!==undefined)c.message=String(b.message).trim(); if(b.ctaLabel!==undefined)c.ctaLabel=String(b.ctaLabel).trim(); if(b.couponCode!==undefined)c.couponCode=String(b.couponCode||'').trim().toUpperCase()||null; if(b.startsAt!==undefined)c.startsAt=b.startsAt||null; if(b.endsAt!==undefined)c.endsAt=b.endsAt||null; if(c.startsAt&&c.endsAt&&new Date(c.startsAt)>=new Date(c.endsAt))return json(res,400,{error:'تاريخ نهاية الحملة يجب أن يكون بعد البداية'}); if(b.active!==undefined)c.active=b.active===true; c.updatedAt=new Date().toISOString(); writeDb(db); return json(res,200,c);
+  }
+  if(url.startsWith('/api/admin/campaigns/') && req.method==='DELETE'){
+    const campaignId=url.split('/').pop(); const db=readDb(); const before=(db.campaigns||[]).length; db.campaigns=(db.campaigns||[]).filter(c=>c.id!==campaignId); if(db.campaigns.length===before)return json(res,404,{error:'الحملة غير موجودة'}); writeDb(db); return json(res,200,{ok:true});
+  }
   if(url==='/api/admin/shipping' && req.method==='GET'){return json(res,200,readDb().shipping||DEFAULT_SHIPPING);}
   if(url==='/api/admin/shipping' && req.method==='PUT'){const b=await body(req);if(!Array.isArray(b.zones)||!Number.isFinite(Number(b.freeShippingThreshold))||b.zones.some(z=>!z.id||!z.name||!Number.isFinite(Number(z.fee))||Number(z.fee)<0))return json(res,400,{error:'إعدادات الشحن غير صحيحة'});const db=readDb();db.shipping={zones:b.zones.map(z=>({id:String(z.id),name:String(z.name).trim(),fee:Number(z.fee)})),freeShippingThreshold:Math.max(0,Number(b.freeShippingThreshold))};writeDb(db);return json(res,200,db.shipping);}
   if(url==='/api/admin/coupons' && req.method==='POST'){

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 4.5.0</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 4.7.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -33,6 +33,8 @@
         <input id="searchInput" type="search" placeholder="ابحث عن منتج..." autocomplete="off">
       </div>
     </section>
+
+    <section id="campaignBanner" class="campaigns" aria-label="العروض والحملات"></section>
 
     <section class="categories" aria-label="الأقسام">
       <button class="cat active" data-category="all" type="button">الكل</button>
@@ -159,10 +161,11 @@
       <h3>إضافة منتج جديد</h3>
       <form id="addProductForm" class="admin-add-form"><input id="newProductName" required placeholder="اسم المنتج"><input id="newProductPrice" required type="number" min="0" placeholder="السعر"><input id="newProductStock" required type="number" min="0" value="10" placeholder="المخزون"><select id="newProductCategory"><option value="electronics">إلكترونيات</option><option value="fashion">ملابس</option><option value="home">المنزل</option></select><input id="newProductEmoji" placeholder="إيموجي المنتج"><input id="newProductImage" type="url" placeholder="رابط صورة المنتج (اختياري)"><textarea id="newProductDescription" placeholder="وصف المنتج" rows="2"></textarea><button class="primary-btn" type="submit">إضافة المنتج</button></form>
       <h3>إدارة المنتجات وتفاصيلها</h3><p class="admin-note">يمكنك إضافة رابط صورة مباشر للمنتج، وسيظهر بدل الإيموجي تلقائيًا.</p><div id="adminProducts" class="admin-list"></div>
+      <h3>📣 إدارة العروض والحملات</h3><p class="admin-note">أنشئ حملة مجدولة تظهر للعملاء تلقائيًا أثناء فترة النشاط، ويمكن ربطها بكوبون خصم موجود.</p><form id="campaignForm" class="admin-add-form campaign-form"><input id="campaignTitle" required placeholder="عنوان الحملة — مثل عروض نهاية الأسبوع"><textarea id="campaignMessage" required rows="2" placeholder="رسالة العرض للعملاء"></textarea><input id="campaignCta" placeholder="نص زر العرض — اختياري"><input id="campaignCoupon" placeholder="كود كوبون موجود — اختياري"><label>تبدأ في <input id="campaignStarts" type="datetime-local"></label><label>تنتهي في <input id="campaignEnds" type="datetime-local"></label><label class="switch-label"><input id="campaignActive" type="checkbox" checked> تفعيل الحملة الآن</label><button class="primary-btn" type="submit">إنشاء الحملة</button></form><div id="adminCampaigns" class="admin-list"><p class="empty">جارٍ تحميل الحملات...</p></div>
       <h3>🎟️ إدارة كوبونات الخصم</h3><form id="couponForm" class="admin-add-form"><input id="couponCodeAdmin" required placeholder="كود الكوبون مثل SAVE10"><select id="couponTypeAdmin"><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option></select><input id="couponValueAdmin" required type="number" min="0" step="0.01" placeholder="قيمة الخصم"><input id="couponMinAdmin" type="number" min="0" step="0.01" placeholder="الحد الأدنى للطلب"><input id="couponExpiryAdmin" type="date"><input id="couponLabelAdmin" placeholder="وصف الكوبون"><button class="primary-btn" type="submit">إنشاء كوبون</button></form><div id="adminCoupons" class="admin-list"><p class="empty">جارٍ تحميل الكوبونات...</p></div>
       <h3>🚚 إعدادات الشحن والتوصيل</h3><form id="shippingSettingsForm" class="admin-add-form shipping-settings-form"><div id="shippingZonesAdmin"></div><input id="freeShippingThreshold" type="number" min="0" step="0.01" placeholder="الشحن المجاني فوق مبلغ"><button class="primary-btn" type="submit">حفظ إعدادات الشحن</button></form><p class="admin-note">يمكنك تعديل رسوم كل منطقة، والشحن المجاني يُحسب بعد الخصم وقبل إنشاء الطلب.</p><h3>👥 إدارة العملاء</h3><div class="admin-filters"><input id="adminCustomerSearch" type="search" placeholder="بحث بالاسم أو البريد أو الهاتف..."></div><div id="adminCustomers" class="admin-orders"><p class="empty">جارٍ تحميل العملاء...</p></div><div id="adminCustomerDetails" class="admin-orders"></div>
       <h3>إدارة الطلبات</h3><div class="admin-filters"><button type="button" id="exportDataBtn">💾 تصدير نسخة احتياطية</button><label class="import-label" for="importDataInput">📥 استيراد نسخة</label><input id="importDataInput" type="file" accept="application/json" hidden><input id="adminOrderSearch" type="search" placeholder="بحث في الطلبات..."><select id="orderStatusFilter"><option value="all">كل الحالات</option><option value="جديد">جديد</option><option value="قيد التجهيز">قيد التجهيز</option><option value="تم الشحن">تم الشحن</option><option value="مكتمل">مكتمل</option><option value="ملغي">ملغي</option></select><button type="button" id="csvExportBtn">📄 تصدير الطلبات CSV</button><button type="button" id="clearOrdersBtn">حذف الطلبات المكتملة</button></div><div id="adminOrders" class="admin-orders"></div>
-      <p class="admin-note">الطلبات والمنتجات تُدار عبر خادم لقطة وقاعدة البيانات؛ بيانات المتصفح تُستخدم فقط لتحسين تجربة العرض.</p>
+      <p class="admin-note">الحملات والعروض تُدار من الخادم وتظهر تلقائيًا حسب مواعيدها. الطلبات والمنتجات تُدار عبر خادم لقطة وقاعدة البيانات؛ بيانات المتصفح تُستخدم فقط لتحسين تجربة العرض.</p>
     </div>
   </section>
 
