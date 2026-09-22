@@ -22,6 +22,11 @@ let orders = readJson("loqataOrders", []); if (!Array.isArray(orders)) orders = 
 let favorites = readJson("loqataFavorites", []); if (!Array.isArray(favorites)) favorites = [];
 let currentCategory = "all";
 let favoritesOnly = false;
+let minPriceFilter = "";
+let maxPriceFilter = "";
+let ratingFilter = 0;
+let offerFilter = "all";
+let sortFilter = "default";
 let adminOrderQuery = "";
 let adminOrderDetailsId = null;
 let customer = readJson("loqataCustomer", {name:"",phone:"",address:""});
@@ -55,9 +60,30 @@ function saveOrders(){localStorage.setItem("loqataOrders",JSON.stringify(orders)
 function saveFavorites(){localStorage.setItem("loqataFavorites",JSON.stringify(favorites));}
 function toggleFavorite(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];saveFavorites();renderProducts();toast(favorites.includes(id)?"أضيف للمفضلة":"أزيل من المفضلة");}
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove("show"),1800);}
-function renderProducts(){const q=$("searchInput").value.trim().toLowerCase();const filtered=products.filter(p=>(currentCategory==="all"||p.category===currentCategory)&&(!favoritesOnly||favorites.includes(p.id))&&p.name.toLowerCase().includes(q));$("products").innerHTML=filtered.map(p=>`<article class="card">${visualMarkup(p)}<button class="favorite-btn ${favorites.includes(p.id)?"is-favorite":""}" data-favorite="${p.id}" type="button" aria-label="المفضلة">${favorites.includes(p.id)?"♥":"♡"}</button><div class="card-body"><h3>${escapeHtml(p.name)}</h3>${priceMarkup(p)}<div class="rating-inline"><span class="stars">${ratingStars(p.ratingAverage)}</span><small>${p.ratingCount||0} تقييم</small></div>${campaigns.some(c=>c.couponCode)?`<span class="smart-offer-badge">⚡ عرض متاح عند الدفع</span>`:""}<div class="stock-line">${Number(p.stock ?? 0)>0?`متاح: ${Number(p.stock)} قطعة`:`غير متوفر حاليًا`}</div><button class="details-btn" data-details="${p.id}" type="button">عرض التفاصيل</button><button class="add-btn" data-add="${p.id}" type="button" ${Number(p.stock ?? 0)<=0?"disabled":""}>${Number(p.stock ?? 0)<=0?"غير متوفر":"أضف للسلة"}</button></div></article>`).join("");$("resultCount").textContent=`${filtered.length} منتج`;$('emptyState').classList.toggle('hidden',filtered.length!==0);}
-function cartCount(){return cart.reduce((s,i)=>s+i.qty,0)}
-function cartTotal(){return cart.reduce((s,i)=>s+i.qty*i.price,0)}
+function effectiveProductPriceForFilter(p){const now=Date.now();const sale=Number(p.salePrice);return Number.isFinite(sale)&&sale>0&&sale<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt).getTime()>now)?sale:Number(p.price||0);}
+function isOnOffer(p){return effectiveProductPriceForFilter(p)<Number(p.price||0);}
+function renderProducts(){
+  const q=$("searchInput").value.trim().toLowerCase();
+  const min=Number(minPriceFilter||0), max=maxPriceFilter===""?Infinity:Number(maxPriceFilter);
+  let filtered=products.filter(p=>{
+    const text=`${p.name||""} ${p.description||""}`.toLowerCase();
+    const price=effectiveProductPriceForFilter(p);
+    const rating=Number(p.ratingAverage||0);
+    const stock=Number(p.stock??0);
+    return (currentCategory==="all"||p.category===currentCategory) && (!favoritesOnly||favorites.includes(p.id)) && (!q||text.includes(q)) && price>=min && price<=max && rating>=Number(ratingFilter||0) && (offerFilter==="all"||(offerFilter==="offers"&&isOnOffer(p))||(offerFilter==="available"&&stock>0));
+  });
+  const sorters={
+    priceAsc:(a,b)=>effectiveProductPriceForFilter(a)-effectiveProductPriceForFilter(b),
+    priceDesc:(a,b)=>effectiveProductPriceForFilter(b)-effectiveProductPriceForFilter(a),
+    ratingDesc:(a,b)=>Number(b.ratingAverage||0)-Number(a.ratingAverage||0),
+    newest:(a,b)=>Number(b.id||0)-Number(a.id||0),
+    nameAsc:(a,b)=>String(a.name||"").localeCompare(String(b.name||""),'ar')
+  };
+  if(sorters[sortFilter]) filtered=filtered.slice().sort(sorters[sortFilter]);
+  $("products").innerHTML=filtered.map(p=>`<article class="card">${visualMarkup(p)}<button class="favorite-btn ${favorites.includes(p.id)?"is-favorite":""}" data-favorite="${p.id}" type="button" aria-label="المفضلة">${favorites.includes(p.id)?"♥":"♡"}</button><div class="card-body"><h3>${escapeHtml(p.name)}</h3>${priceMarkup(p)}<div class="rating-inline"><span class="stars">${ratingStars(p.ratingAverage)}</span><small>${p.ratingCount||0} تقييم</small></div>${isOnOffer(p)?`<span class="smart-offer-badge">⚡ عرض خاص</span>`:""}<div class="stock-line">${Number(p.stock ?? 0)>0?`متاح: ${Number(p.stock)} قطعة`:`غير متوفر حاليًا`}</div><button class="details-btn" data-details="${p.id}" type="button">عرض التفاصيل</button><button class="add-btn" data-add="${p.id}" type="button" ${Number(p.stock ?? 0)<=0?"disabled":""}>${Number(p.stock ?? 0)<=0?"غير متوفر":"أضف للسلة"}</button></div></article>`).join("");
+  $("resultCount").textContent=`${filtered.length} منتج`;$("emptyState").classList.toggle("hidden",filtered.length!==0);
+}
+
 function renderCart(){$("cartCount").textContent=cartCount();$("cartTotal").textContent=money(cartTotal());$("cartItems").innerHTML=cart.length?cart.map(i=>`<div class="cart-item">${visualMarkup(i,"cart-emoji")}<div class="cart-info"><strong>${escapeHtml(i.name)}</strong><div>${money(i.price)}</div><div class="qty"><button type="button" data-minus="${i.id}">−</button><span>${i.qty}</span><button type="button" data-plus="${i.id}">+</button><button class="remove" type="button" data-remove="${i.id}">حذف</button></div></div></div>`).join(""):`<div class="empty">السلة فارغة حاليًا.</div>`;}
 function addToCart(id){const p=products.find(x=>x.id===id);if(!p)return;const item=cart.find(x=>x.id===id);const nextQty=(item?.qty||0)+1;if(Number(p.stock ?? 0)<nextQty)return toast("الكمية المطلوبة غير متاحة");if(item){item.price=effectivePrice(p);item.qty++;}else cart.push({...p,price:effectivePrice(p),qty:1});saveCart();renderCart();toast("تمت إضافة المنتج للسلة");}
 function changeQty(id,delta){const item=cart.find(x=>x.id===id);if(!item)return;item.qty+=delta;if(item.qty<=0)cart=cart.filter(x=>x.id!==id);saveCart();renderCart();}
@@ -123,7 +149,13 @@ document.addEventListener("click",e=>{const fav=e.target.closest("[data-favorite
 document.addEventListener('change',e=>{const select=e.target.closest('[data-order-status-select]');if(select){const o=orders.find(x=>x.id===Number(select.dataset.orderStatusSelect));if(o){apiRequest(`/api/admin/orders/${o.id}`,{method:'PATCH',body:JSON.stringify({status:select.value})}).then(saved=>{o.status=saved.status;saveOrders();renderAdmin();toast('تم تحديث حالة الطلب في قاعدة البيانات');}).catch(err=>toast(err.message));}}if(e.target.id==='orderStatusFilter')renderAdmin();});
 $("closeAdminOrderDetails")?.addEventListener("click",closeAdminOrderDetails);
 document.addEventListener("click",e=>{const view=e.target.closest("[data-view-order]");if(view){e.preventDefault();openAdminOrderDetails(view.dataset.viewOrder);}});
-$("searchInput").addEventListener("input",renderProducts);$("menuBtn").addEventListener("click",toggleSettingsMenu);
+$("searchInput").addEventListener("input",renderProducts);
+$("minPriceFilter")?.addEventListener("input",e=>{minPriceFilter=e.target.value;renderProducts();});
+$("maxPriceFilter")?.addEventListener("input",e=>{maxPriceFilter=e.target.value;renderProducts();});
+$("ratingFilter")?.addEventListener("change",e=>{ratingFilter=Number(e.target.value||0);renderProducts();});
+$("offerFilter")?.addEventListener("change",e=>{offerFilter=e.target.value;renderProducts();});
+$("sortFilter")?.addEventListener("change",e=>{sortFilter=e.target.value;renderProducts();});
+$("clearFiltersBtn")?.addEventListener("click",()=>{minPriceFilter="";maxPriceFilter="";ratingFilter=0;offerFilter="all";sortFilter="default";["minPriceFilter","maxPriceFilter"].forEach(id=>$(id).value="");$("ratingFilter").value="0";$("offerFilter").value="all";$("sortFilter").value="default";renderProducts();});$("menuBtn").addEventListener("click",toggleSettingsMenu);
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{if(!e.target.closest(".topbar-actions"))closeSettingsMenu();});
 $("closeProduct").addEventListener("click",closeProductDetails);$("productOverlay").addEventListener("click",closeProductDetails);$("cartBtn").addEventListener("click",openCart);$("closeCart").addEventListener("click",closeCart);$("cartOverlay").addEventListener("click",closeCart);$("saveCart").addEventListener("click",()=>{saveCart();toast("تم حفظ السلة على هذا الجهاز");});$("orderWhatsApp").addEventListener("click",openCheckout);$("closeCheckout").addEventListener("click",closeCheckout);$("checkoutOverlay").addEventListener("click",closeCheckout);

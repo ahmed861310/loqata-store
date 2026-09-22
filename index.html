@@ -30,7 +30,15 @@
       <h1>خد لقطة قبل ما تروح عليك 👌</h1>
       <p>منتجات مختارة بأسعار مناسبة، والطلب بسهولة عبر واتساب.</p>
       <div class="search-wrap">
-        <input id="searchInput" type="search" placeholder="ابحث عن منتج..." autocomplete="off">
+        <input id="searchInput" type="search" placeholder="ابحث بالاسم أو الوصف..." autocomplete="off">
+      </div>
+      <div class="advanced-filters" aria-label="فلاتر المنتجات">
+        <label>من السعر<input id="minPriceFilter" type="number" min="0" step="1" placeholder="0"></label>
+        <label>إلى السعر<input id="maxPriceFilter" type="number" min="0" step="1" placeholder="بدون حد"></label>
+        <label>التقييم<select id="ratingFilter"><option value="0">كل التقييمات</option><option value="4">⭐ 4 فأعلى</option><option value="3">⭐ 3 فأعلى</option><option value="2">⭐ 2 فأعلى</option></select></label>
+        <label>العروض<select id="offerFilter"><option value="all">الكل</option><option value="offers">العروض فقط</option><option value="available">المتاح فقط</option></select></label>
+        <label>الترتيب<select id="sortFilter"><option value="default">الافتراضي</option><option value="priceAsc">السعر: الأقل أولًا</option><option value="priceDesc">السعر: الأعلى أولًا</option><option value="ratingDesc">الأعلى تقييمًا</option><option value="newest">الأحدث</option><option value="nameAsc">الاسم: أ-ي</option></select></label>
+        <button id="clearFiltersBtn" type="button" class="secondary-btn small-btn">مسح الفلاتر</button>
       </div>
     </section>
 
