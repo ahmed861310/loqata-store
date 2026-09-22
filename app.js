@@ -180,3 +180,27 @@ $("accountOverlay")?.addEventListener('click',()=>{$("accountModal").hidden=true
 $("accountForm")?.addEventListener('submit',e=>{e.preventDefault();customer={...customer,name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();toast('تم حفظ بيانات التواصل على هذا الجهاز');});
 const previousHandleSetting=handleSetting;
 handleSetting=function(action){if(action==='account'){openCustomerAccount();return;}return previousHandleSetting(action);};
+
+
+// v4.2.0: إدارة العملاء وربط العميل بكل طلباته وسجل الدفع والشحن
+let adminCustomers=[];
+async function loadAdminCustomers(){
+  const box=$("adminCustomers"); if(!box)return;
+  try{adminCustomers=await apiRequest('/api/admin/customers'); renderAdminCustomers();}
+  catch(err){box.innerHTML=`<p class="empty">${escapeHtml(err.message)}</p>`;}
+}
+function renderAdminCustomers(){
+  const box=$("adminCustomers"); if(!box)return;
+  const q=String($("adminCustomerSearch")?.value||'').trim().toLowerCase();
+  const rows=adminCustomers.filter(c=>[c.name,c.email,c.phone].some(v=>String(v||'').toLowerCase().includes(q)));
+  box.innerHTML=rows.length?rows.map(c=>`<button type="button" class="order-card customer-row" data-customer-id="${escapeHtml(c.id)}"><strong>${escapeHtml(c.name||'بدون اسم')}</strong><p>${escapeHtml(c.email||'')}<br>📱 ${escapeHtml(c.phone||'غير مسجل')}<br>الطلبات: ${c.orders} — إجمالي المشتريات: ${money(c.totalSpent)}</p></button>`).join(''):'<p class="empty">لا يوجد عملاء مطابقون.</p>';
+}
+async function showAdminCustomer(id){
+  const box=$("adminCustomerDetails"); if(!box)return;
+  try{const data=await apiRequest(`/api/admin/customers/${encodeURIComponent(id)}`);const c=data.customer;box.innerHTML=`<div class="order-card"><h3>👤 ${escapeHtml(c.name||'عميل')}</h3><p>البريد: ${escapeHtml(c.email||'')}<br>الهاتف: ${escapeHtml(c.phone||'غير مسجل')}</p><h4>سجل الطلبات</h4>${data.orders.length?data.orders.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')} — ${escapeHtml(o.paymentStatus||'')}</summary><p>الدفع: ${escapeHtml(o.paymentMethodName||o.paymentMethod||'')}<br>الشحن: ${escapeHtml(o.shippingZoneName||'')} — ${money(o.shippingFee||0)}<br>آخر تحديث: ${escapeHtml(o.statusHistory?.at(-1)?.date||o.date||'')} </p></details>`).join(''):'<p class="empty">لا توجد طلبات.</p>'}</div>`;}
+  catch(err){box.innerHTML=`<p class="empty">${escapeHtml(err.message)}</p>`;}
+}
+$("adminCustomerSearch")?.addEventListener('input',renderAdminCustomers);
+document.addEventListener('click',e=>{const row=e.target.closest('[data-customer-id]');if(row)showAdminCustomer(row.dataset.customerId);});
+const _renderAdminBeforeCustomers=renderAdmin;
+renderAdmin=async function(){await _renderAdminBeforeCustomers();loadAdminCustomers();};

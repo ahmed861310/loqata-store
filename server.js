@@ -141,6 +141,19 @@ async function api(req,res,url){
   if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
   if(req.method==='GET'&&url==='/api/notifications'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const notes=readDb().orders.filter(o=>o.userId===u.id).map(o=>({id:o.id,title:'تحديث طلبك',message:`الطلب #${o.id} حالته الآن: ${o.status}`,date:o.statusHistory?.at(-1)?.date||o.date,status:o.status}));return json(res,200,notes);}
   if(req.method==='GET'&&url==='/api/admin/orders'){return json(res,200,readDb().orders);}
+  if(req.method==='GET'&&url==='/api/admin/customers'){
+    const db=readDb(); const by=new Map();
+    for(const u of db.users.filter(x=>x.role==='customer')) by.set(u.id,{id:u.id,name:u.name||'',email:u.email||'',createdAt:u.createdAt||null,orders:0,totalSpent:0,lastOrderAt:null,phone:''});
+    for(const o of db.orders){
+      if(o.userId && by.has(o.userId)){const c=by.get(o.userId);c.orders++;c.totalSpent+=Number(o.total||0);c.lastOrderAt=!c.lastOrderAt||new Date(o.date)>new Date(c.lastOrderAt)?o.date:c.lastOrderAt;c.phone=o.phone||c.phone;}
+    }
+    return json(res,200,[...by.values()].sort((a,b)=>new Date(b.lastOrderAt||b.createdAt||0)-new Date(a.lastOrderAt||a.createdAt||0)));
+  }
+  if(req.method==='GET'&&url.startsWith('/api/admin/customers/')){
+    const customerId=decodeURIComponent(url.split('/').pop()); const db=readDb(); const u=db.users.find(x=>x.id===customerId&&x.role==='customer');
+    if(!u)return json(res,404,{error:'العميل غير موجود'});
+    const customerOrders=db.orders.filter(o=>o.userId===u.id); return json(res,200,{customer:{...publicUser(u),phone:customerOrders[0]?.phone||''},orders:customerOrders});
+  }
   if(req.method==='POST'&&url==='/api/admin/products'){const b=await body(req);if(!b.name||!Number.isFinite(Number(b.price))||!Number.isFinite(Number(b.stock)))return json(res,400,{error:'بيانات المنتج غير مكتملة'});const db=readDb();const product={id:Date.now(),name:String(b.name).trim(),price:Number(b.price),stock:Number(b.stock),category:b.category||'home',emoji:b.emoji||'🛍️',image:b.image||'',description:b.description||''};db.products.push(product);writeDb(db);return json(res,201,product);}
   if(req.method==='DELETE'&&url.startsWith('/api/admin/orders/')){const orderId=url.split('/').pop();const db=readDb();const before=db.orders.length;db.orders=db.orders.filter(o=>String(o.id)!==orderId);if(db.orders.length===before)return json(res,404,{error:'الطلب غير موجود'});writeDb(db);return json(res,200,{ok:true});}
   if(req.method==='PATCH'&&url.startsWith('/api/admin/orders/')){const orderId=url.split('/').pop();const b=await body(req);const db=readDb();const o=db.orders.find(x=>String(x.id)===orderId);if(!o)return json(res,404,{error:'الطلب غير موجود'});if(b.status && !ORDER_STATUSES.has(String(b.status)))return json(res,400,{error:'حالة الطلب غير صالحة'});if(b.status){o.status=String(b.status);o.statusHistory=Array.isArray(o.statusHistory)?o.statusHistory:[];o.statusHistory.push({status:o.status,date:new Date().toISOString()});}writeDb(db);return json(res,200,o);}
