@@ -147,7 +147,38 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
   if(req.method==='GET'&&url==='/api/payments/config'){return json(res,200,{provider:paymentService.provider,currency:paymentService.currency,methods:paymentService.methods()});}
   if(req.method==='POST'&&url==='/api/payments/intents'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);if(String(b.paymentMethod||'')!=='card')return json(res,400,{error:'هذه العملية مخصصة للدفع الإلكتروني'});const amount=Number(b.amount);if(!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'مبلغ الدفع غير صحيح'});const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId)&&(!o.userId||o.userId===u.id));if(!order)return json(res,404,{error:'الطلب غير موجود'});const result=await paymentService.createIntent({orderId:String(b.orderId||''),amount,billingData:b.billingData||{},items:Array.isArray(b.items)?b.items:[]});if(result.status==='not_configured')return json(res,503,result);if(result.status!=='created')return json(res,502,result);order.paymentStatus='pending';order.paymentProvider=result.provider;order.paymentIntentId=result.intentionId||null;order.paymentUpdatedAt=new Date().toISOString();writeDb(db);return json(res,201,result);}
   if(req.method==='POST'&&url==='/api/payments/demo/complete'){if(process.env.PAYMENT_PROVIDER!=='demo')return json(res,404,{error:'وضع الدفع التجريبي غير مفعل'});const b=await body(req);const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId));if(!order)return json(res,404,{error:'الطلب غير موجود'});if(order.paymentStatus==='paid')return json(res,200,{ok:true,order});const success=Boolean(b.success);order.paymentStatus=success?'paid':'failed';order.status=success?'قيد التجهيز':'ملغي';order.paymentUpdatedAt=new Date().toISOString();order.paymentReference=`demo_${crypto.randomBytes(6).toString('hex')}`;order.statusHistory=Array.isArray(order.statusHistory)?order.statusHistory:[];order.statusHistory.push({status:order.status,date:new Date().toISOString(),reason:success?'تم الدفع التجريبي':'فشل الدفع التجريبي'});writeDb(db);return json(res,200,{ok:true,order});}
-  if(req.method==='POST'&&url==='/api/payments/webhook'){let raw='';req.on('data',c=>raw+=c);await new Promise(resolve=>req.on('end',resolve));let payload={};try{payload=JSON.parse(raw||'{}')}catch{return json(res,400,{error:'JSON غير صالح'});}const signature=req.headers['x-payment-signature']||req.headers['hmac'];if(!paymentService.verifyWebhook(payload,signature))return json(res,401,{error:'توقيع webhook غير صالح'});return json(res,200,{received:true});}
+  if(req.method==='POST'&&url==='/api/payments/webhook'){
+    let raw='';req.on('data',c=>raw+=c);await new Promise(resolve=>req.on('end',resolve));
+    let payload={};try{payload=JSON.parse(raw||'{}')}catch{return json(res,400,{error:'JSON غير صالح'});}
+    const signature=req.headers['x-payment-signature']||req.headers['hmac'];
+    if(!paymentService.verifyWebhook(payload,signature))return json(res,401,{error:'توقيع webhook غير صالح'});
+    const obj=payload?.obj||{}; const paymobOrderId=String(obj.order?.id||'');
+    const reference=String(obj.special_reference||obj.extras?.loqata_order_id||'');
+    const intentionId=String(obj.intention?.id||obj.intention_id||'');
+    const db=readDb();
+    const order=db.orders.find(o=>reference&&String(o.id)===reference)
+      ||db.orders.find(o=>paymobOrderId&&String(o.paymentOrderId||o.paymobOrderId)===paymobOrderId)
+      ||db.orders.find(o=>intentionId&&String(o.paymentIntentId||'')===intentionId);
+    if(!order)return json(res,200,{received:true,matched:false});
+    const success=obj.success===true; const pending=obj.pending===true;
+    const nextPaymentStatus=pending?'pending':(success?'paid':'failed');
+    const oldPaymentStatus=order.paymentStatus||'unknown';
+    order.paymentStatus=nextPaymentStatus;
+    order.paymentProvider='paymob';
+    order.paymentOrderId=paymobOrderId||order.paymentOrderId||null;
+    order.paymentReference=String(obj.id||obj.transaction_id||order.paymentReference||'');
+    order.paymentUpdatedAt=new Date().toISOString();
+    order.paymentRaw={id:obj.id||null,success,pending,amount_cents:obj.amount_cents||null,currency:obj.currency||null};
+    if(success&&order.status!=='ملغي'&&order.status!=='مكتمل')order.status='قيد التجهيز';
+    if(!success&&!pending&&order.status!=='مكتمل')order.status='ملغي';
+    if(oldPaymentStatus!==nextPaymentStatus){
+      addNotification(db,{userId:order.userId,role:'customer',type:'payment_update',orderId:order.id,vars:{orderId:order.id,paymentStatus:nextPaymentStatus}});
+      addNotification(db,{role:'admin',type:'payment_update',orderId:order.id,title:'تحديث دفع',message:`تم تحديث دفع الطلب #${order.id} إلى ${nextPaymentStatus}.`,vars:{orderId:order.id,paymentStatus:nextPaymentStatus}});
+    }
+    order.statusHistory=Array.isArray(order.statusHistory)?order.statusHistory:[];
+    order.statusHistory.push({status:order.status,date:new Date().toISOString(),reason:success?'تم تأكيد الدفع الإلكتروني':(pending?'الدفع قيد المعالجة':'فشل الدفع الإلكتروني')});
+    writeDb(db); return json(res,200,{received:true,matched:true,orderId:order.id,paymentStatus:nextPaymentStatus});
+  }
   if(req.method==='POST'&&url==='/api/checkout/quote'){
     const b=await body(req); const db=readDb(); const byId=new Map(db.products.map(p=>[String(p.id),p])); const itemsIn=Array.isArray(b.items)?b.items:[]; let subtotal=0; const items=[];
     for(const item of itemsIn){const p=byId.get(String(item.id)); const qty=Number(item.qty); if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'}); const activePrice=Number(p.salePrice||0)>0&&Number(p.salePrice)<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt)>new Date())?Number(p.salePrice):Number(p.price||0); items.push({id:p.id,name:p.name,qty,price:activePrice,originalPrice:Number(p.price||0),salePrice:activePrice<Number(p.price||0)?activePrice:null}); subtotal+=qty*activePrice; }

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نتيجة الدفع — لقطة</title><style>body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:24px}.card{max-width:520px;margin:12vh auto;background:#fff;padding:28px;border-radius:18px;box-shadow:0 8px 30px #0001;text-align:center}a{display:inline-block;margin-top:18px;padding:12px 22px;background:#111;color:#fff;text-decoration:none;border-radius:10px}.ok{font-size:48px}</style></head>
+<body><main class="card"><div class="ok">💳</div><h1>تم استلام نتيجة الدفع</h1><p id="msg">جارٍ التحقق من حالة الطلب…</p><a href="/">العودة إلى متجر لقطة</a></main>
+<script>
+const q=new URLSearchParams(location.search),id=q.get('orderId');
+if(id){fetch('/api/payments/status?orderId='+encodeURIComponent(id),{credentials:'include'}).then(r=>r.json()).then(x=>{
+ document.getElementById('msg').textContent=x.paymentStatus==='paid'?'تم تأكيد الدفع بنجاح، والطلب قيد التجهيز.':x.paymentStatus==='failed'?'لم يتم تأكيد الدفع. يمكنك المحاولة مرة أخرى من المتجر.':'الدفع قيد المعالجة. سيتم تحديث الحالة تلقائيًا.';
+}).catch(()=>document.getElementById('msg').textContent='تعذر التحقق الآن. راجع حالة الطلب من حسابك.');}
+</script></body></html>
