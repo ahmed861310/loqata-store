@@ -145,12 +145,13 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
   }
   if(req.method==='GET'&&url==='/api/shipping-settings'){const s=readDb().shipping||DEFAULT_SHIPPING;return json(res,200,s);}
   if(req.method==='GET'&&url==='/api/payments/config'){return json(res,200,{provider:paymentService.provider,currency:paymentService.currency,methods:paymentService.methods()});}
-  if(req.method==='POST'&&url==='/api/payments/intents'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);if(String(b.paymentMethod||'')!=='card')return json(res,400,{error:'هذه العملية مخصصة للدفع الإلكتروني'});const amount=Number(b.amount);if(!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'مبلغ الدفع غير صحيح'});const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId)&&(!o.userId||o.userId===u.id));if(!order)return json(res,404,{error:'الطلب غير موجود'});const result=await paymentService.createIntent({orderId:String(b.orderId||''),amount,billingData:b.billingData||{},items:Array.isArray(b.items)?b.items:[]});if(result.status==='not_configured')return json(res,503,result);if(result.status!=='created')return json(res,502,result);order.paymentStatus='pending';order.paymentProvider=result.provider;order.paymentIntentId=result.intentionId||null;order.paymentUpdatedAt=new Date().toISOString();writeDb(db);return json(res,201,result);}
+  if(req.method==='POST'&&url==='/api/payments/intents'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);if(String(b.paymentMethod||'')!=='card')return json(res,400,{error:'هذه العملية مخصصة للدفع الإلكتروني'});const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId)&&o.userId===u.id);if(!order)return json(res,404,{error:'الطلب غير موجود'});if(order.paymentMethod!=='card')return json(res,400,{error:'الطلب ليس طلب دفع إلكتروني'});if(order.paymentStatus==='paid')return json(res,409,{error:'تم دفع الطلب بالفعل'});const amount=Number(order.total);if(!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'إجمالي الطلب غير صحيح'});const result=await paymentService.createIntent({orderId:String(order.id),amount,billingData:{name:order.name,phone:order.phone,address:order.address},items:Array.isArray(order.items)?order.items:[]});if(result.status==='not_configured')return json(res,503,result);if(result.status!=='created')return json(res,502,result);order.paymentStatus='pending';order.paymentProvider=result.provider;order.paymentIntentId=result.intentionId||null;order.paymentUpdatedAt=new Date().toISOString();writeDb(db);return json(res,201,result);}
   if(req.method==='POST'&&url==='/api/payments/demo/complete'){if(process.env.PAYMENT_PROVIDER!=='demo')return json(res,404,{error:'وضع الدفع التجريبي غير مفعل'});const b=await body(req);const db=readDb();const order=db.orders.find(o=>String(o.id)===String(b.orderId));if(!order)return json(res,404,{error:'الطلب غير موجود'});if(order.paymentStatus==='paid')return json(res,200,{ok:true,order});const success=Boolean(b.success);order.paymentStatus=success?'paid':'failed';order.status=success?'قيد التجهيز':'ملغي';order.paymentUpdatedAt=new Date().toISOString();order.paymentReference=`demo_${crypto.randomBytes(6).toString('hex')}`;order.statusHistory=Array.isArray(order.statusHistory)?order.statusHistory:[];order.statusHistory.push({status:order.status,date:new Date().toISOString(),reason:success?'تم الدفع التجريبي':'فشل الدفع التجريبي'});writeDb(db);return json(res,200,{ok:true,order});}
   if(req.method==='POST'&&url==='/api/payments/webhook'){
     let raw='';req.on('data',c=>raw+=c);await new Promise(resolve=>req.on('end',resolve));
     let payload={};try{payload=JSON.parse(raw||'{}')}catch{return json(res,400,{error:'JSON غير صالح'});}
-    const signature=req.headers['x-payment-signature']||req.headers['hmac'];
+    const query = new URL(req.url, 'http://localhost').searchParams;
+    const signature=req.headers['x-payment-signature']||req.headers['hmac']||query.get('hmac');
     if(!paymentService.verifyWebhook(payload,signature))return json(res,401,{error:'توقيع webhook غير صالح'});
     const obj=payload?.obj||{}; const paymobOrderId=String(obj.order?.id||'');
     const reference=String(obj.special_reference||obj.extras?.loqata_order_id||'');
@@ -161,6 +162,10 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
       ||db.orders.find(o=>intentionId&&String(o.paymentIntentId||'')===intentionId);
     if(!order)return json(res,200,{received:true,matched:false});
     const success=obj.success===true; const pending=obj.pending===true;
+    const callbackAmount=Number(obj.amount_cents);
+    const expectedAmount=Math.round(Number(order.total)*100);
+    if(Number.isFinite(callbackAmount) && callbackAmount!==expectedAmount)return json(res,400,{error:'مبلغ عملية الدفع لا يطابق إجمالي الطلب'});
+    if(obj.currency && String(obj.currency).toUpperCase()!=='EGP')return json(res,400,{error:'عملة الدفع غير مطابقة'});
     const nextPaymentStatus=pending?'pending':(success?'paid':'failed');
     const oldPaymentStatus=order.paymentStatus||'unknown';
     order.paymentStatus=nextPaymentStatus;

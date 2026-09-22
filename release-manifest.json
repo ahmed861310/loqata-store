@@ -1,5 +1,5 @@
 {
-  "version": "5.11.0",
+  "version": "5.12.0",
   "purpose": "production deployment preflight gate after Paymob mock validation",
   "source": "loqata-v5.10.0-paymob-test-ready.zip",
   "manual_production_payment_test_required": true,
@@ -9,5 +9,12 @@
   "automated_paymob_mock_test": "PASS",
   "paymob_test_command": "npm run test:paymob",
   "production_preflight_command": "npm run preflight:production",
-  "production_preflight": "PASS_CODE_VALIDATED"
+  "production_preflight": "PASS_CODE_VALIDATED",
+  "releaseNotes": [
+    "Security fixes for online payment intent amount ownership and Paymob callback verification.",
+    "Paymob HMAC callback now accepts the documented hmac query parameter as well as test headers.",
+    "Online payment intent now uses the server-side order total and exact order items.",
+    "Webhook rejects amount or currency mismatches before changing payment status.",
+    "Corrected Paymob webhook URL in .env.example."
+  ]
 }

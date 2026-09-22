@@ -1,4 +1,4 @@
-# LOQATA v5.9.0 — Production Readiness
+# LOQATA v5.12.0 — Production Readiness
 
 تمت إضافة فحص جاهزية آمن قبل النشر النهائي.
 
@@ -27,3 +27,10 @@
 2. نفّذ عملية Paymob TEST ناجحة.
 3. نفّذ عملية TEST فاشلة/ملغاة.
 4. تأكد من وصول webhook وتحديث حالة الدفع والطلب في لوحة الإدارة.
+
+## v5.12.0 — Payment integrity fixes
+
+- الدفع الإلكتروني يستخدم إجمالي الطلب المحسوب على الخادم، وليس المبلغ المرسل من المتصفح.
+- Webhook يتحقق من تطابق مبلغ العملية والعملة قبل تحديث حالة الدفع.
+- دعم `hmac` في query parameter المتوافق مع Paymob Transaction Response Callback، مع الإبقاء على رؤوس الاختبار.
+- تم تصحيح رابط Webhook في `.env.example` إلى `/api/payments/webhook`.
