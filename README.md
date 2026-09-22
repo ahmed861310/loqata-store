@@ -265,3 +265,13 @@
 بعد نجاح اختبار الدفع المحلي، تمت إضافة `GET /api/production-readiness` لفحص إعدادات الإنتاج بدون كشف أي مفاتيح سرية. في بيئة الإنتاج يجب أن تكون NODE_ENV=production، وOTP_WEBHOOK_URL مضبوطًا، وPAYMENT_PROVIDER=paymob، وجميع إعدادات Paymob الأساسية والـ webhook والـ redirect موجودة.
 
 الـ endpoint يعيد `ok: true` فقط عندما تكتمل المتطلبات، ويعرض أسماء الإعدادات الناقصة دون قيمها.
+
+## v5.11.0 — Production Deployment Preflight
+
+تمت إضافة فحص قبل النشر عبر:
+
+```bash
+npm run preflight:production
+```
+
+الفحص يتحقق من Node.js 20+، وبيئة production، وتفعيل Paymob، واكتمال متغيرات البيئة، وروابط HTTPS، وصحة Syntax للخادم. لا يعرض أي أسرار أو قيم مفاتيح.
