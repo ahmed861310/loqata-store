@@ -125,3 +125,14 @@
 - `OTP_WEBHOOK_URL=https://your-sms-adapter.example/send`
 
 نقطة الـ webhook تستقبل JSON بالشكل: `{ "phone": "010...", "code": "123456", "message": "..." }` ويجب أن تعيد HTTP 2xx عند نجاح الإرسال.
+
+## v3.7.0 — تجهيز النشر
+- Dockerfile جاهز لتشغيل الخادم على Node 20.
+- نقطة فحص `/api/health`.
+- Security headers أساسية.
+- لا يتم تضمين `.env` داخل الصورة.
+- استخدم HTTPS وSecret Manager في الاستضافة.
+
+### اختبار سريع
+`npm start`
+ثم افتح `/api/health` وتأكد من ظهور `ok: true`.
