@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 3.3.0</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 3.4.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -89,6 +89,7 @@
       <input id="customerPhone" name="customerPhone" type="tel" required pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
       <label for="shippingZone">منطقة التوصيل</label>
       <select id="shippingZone" name="shippingZone" required></select>
+      <fieldset class="payment-methods"><legend>طريقة الدفع</legend><label><input type="radio" name="paymentMethod" value="cod" checked> 💵 الدفع عند الاستلام</label><p class="checkout-note">سيتم دفع قيمة الطلب كاملة عند استلامه.</p></fieldset>
       <label for="customerAddress">العنوان</label>
       <textarea id="customerAddress" name="customerAddress" required minlength="5" rows="3" placeholder="المنطقة، الشارع، رقم العقار"></textarea>
       <label for="couponCode">كود الخصم (اختياري)</label><input id="couponCode" name="couponCode" type="text" placeholder="أدخل كود الخصم"><button id="applyCouponBtn" type="button">تطبيق الكوبون</button><p id="couponMessage" class="checkout-note"></p><div class="checkout-summary" id="checkoutSummary"></div>
@@ -151,7 +152,7 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 3.3.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 3.4.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 </body>
 </html>

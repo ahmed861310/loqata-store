@@ -55,12 +55,13 @@ function checkoutSubtotal(){return cart.reduce((s,i)=>s+i.qty*Number(i.price||0)
 function updateCheckoutSummary(){const subtotal=checkoutSubtotal();const zone=(shippingSettings.zones||[]).find(z=>z.id===$("shippingZone")?.value);const fee=zone?Number(zone.fee||0):0;const discount=selectedCoupon?Number(selectedCoupon.discount||0):0;const after=Math.max(0,subtotal-discount);const shipping=after>=Number(shippingSettings.freeShippingThreshold||0)?0:fee;const total=after+shipping;$("checkoutSummary").innerHTML=`<strong>ملخص الطلب</strong>${cart.map(i=>`<div>${escapeHtml(i.name)} × ${i.qty} — ${money(i.qty*i.price)}</div>`).join("")}<hr><div>الإجمالي قبل الخصم: ${money(subtotal)}</div><div>الخصم: -${money(discount)}</div><div>الشحن: ${shipping===0?"مجاني 🎉":money(shipping)}</div><strong>الإجمالي النهائي: ${money(total)}</strong>`;}
 async function openCheckout(){if(!cart.length)return toast("أضف منتجًا إلى السلة أولًا");await loadShippingSettings();selectedCoupon=null;$("couponCode").value="";$("couponMessage").textContent="";$("customerName").value=customer.name||"";$("customerPhone").value=customer.phone||"";$("customerAddress").value=customer.address||"";updateCheckoutSummary();$("checkoutModal").hidden=false;$("checkoutOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
 function closeCheckout(){$("checkoutModal").hidden=true;$("checkoutOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
-async function sendOrder(name,phone,address,couponCode=""){customer={name,phone,address};saveCustomer();const order={name,phone,address,shippingZone:$("shippingZone").value,items:cart.map(i=>({id:i.id,qty:i.qty})),couponCode};try{const saved=await apiRequest("/api/orders",{method:"POST",body:JSON.stringify(order)});orders.unshift(saved);saveOrders();const fresh=await apiRequest("/api/products");if(Array.isArray(fresh)){products=fresh;saveProducts();}const lines=(saved.items||[]).map(i=>`- ${i.name} × ${i.qty} = ${money(i.qty*i.price)}`);const message=`مرحبًا، أريد تأكيد طلبي من متجر لقطة:
+async function sendOrder(name,phone,address,couponCode=""){customer={name,phone,address};saveCustomer();const order={name,phone,address,shippingZone:$("shippingZone").value,paymentMethod:"cod",items:cart.map(i=>({id:i.id,qty:i.qty})),couponCode};try{const saved=await apiRequest("/api/orders",{method:"POST",body:JSON.stringify(order)});orders.unshift(saved);saveOrders();const fresh=await apiRequest("/api/products");if(Array.isArray(fresh)){products=fresh;saveProducts();}const lines=(saved.items||[]).map(i=>`- ${i.name} × ${i.qty} = ${money(i.qty*i.price)}`);const message=`مرحبًا، أريد تأكيد طلبي من متجر لقطة:
 
 الاسم: ${name}
 الهاتف: ${phone}
 العنوان: ${address}
 منطقة التوصيل: ${saved.shippingZoneName||""}
+طريقة الدفع: الدفع عند الاستلام
 
 المنتجات:
 ${lines.join("\n")}
