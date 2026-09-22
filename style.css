@@ -250,3 +250,6 @@ body.modal-open{overflow:hidden}
 
 /* v4.4.0 shipping tracking */
 .customer-tracking{border-style:dashed}.customer-tracking .primary-btn{display:inline-block;margin:6px 0 12px;text-decoration:none}
+
+/* v4.5.0 notifications */
+.notification-card{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:11px;margin-bottom:8px;background:#fff}.notification-card.unread{border-right:4px solid #111827;background:#f8fafc}.notification-card.read{opacity:.82}.notification-card p{margin:5px 0;line-height:1.6}.notification-card small{color:var(--muted)}.admin-notification-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.admin-notification-head h3{margin-bottom:8px}@media(max-width:600px){.notification-card{align-items:flex-start;flex-direction:column}.admin-notification-head{align-items:flex-start;flex-direction:column}}
