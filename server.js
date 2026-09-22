@@ -217,6 +217,23 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
   }
   if(req.method==='GET'&&url==='/api/payments/status'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const o=readDb().orders.find(x=>String(x.id)===String(new URLSearchParams((new URL(req.url,'http://localhost')).search).get('orderId'))&&(!x.userId||x.userId===u.id));if(!o)return json(res,404,{error:'الطلب غير موجود'});return json(res,200,{orderId:o.id,paymentStatus:o.paymentStatus||'unknown',status:o.status});}
   if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
+  if(req.method==='GET'&&url==='/api/recommendations'){
+    const db=readDb(); const u=currentUser(req); const all=db.products||[];
+    const followed=new Set(u?(db.wishlist||[]).filter(x=>x.userId===u.id).map(x=>String(x.productId)):[]);
+    const ordered=new Set(u?(db.orders||[]).filter(o=>o.userId===u.id).flatMap(o=>(o.items||[]).map(i=>String(i.id))):[]);
+    const seedIds=new Set([...followed,...ordered]);
+    const seedCategories=new Set(all.filter(p=>seedIds.has(String(p.id))).map(p=>p.category).filter(Boolean));
+    const scored=all.filter(p=>Number(p.stock||0)>0&&!seedIds.has(String(p.id))).map(p=>{
+      let score=0;
+      if(seedCategories.has(p.category))score+=6;
+      score+=Math.min(5,Number(p.ratingAverage||0));
+      if(Number(p.ratingCount||0)>0)score+=1;
+      const sale=Number(p.salePrice||0)>0&&Number(p.salePrice)<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt)>new Date());
+      if(sale)score+=2;
+      return {...p,_recommendationScore:score};
+    }).sort((a,b)=>b._recommendationScore-a._recommendationScore||Number(b.ratingAverage||0)-Number(a.ratingAverage||0)||Number(b.id||0)-Number(a.id||0)).slice(0,8).map(({_recommendationScore,...p})=>p);
+    return json(res,200,{items:scored,personalized:Boolean(u&&seedIds.size),basedOn:seedCategories.size?'اهتماماتك ومتابعتك وطلباتك السابقة':'الأعلى تقييمًا والعروض المتاحة'});
+  }
   if(req.method==='GET'&&url==='/api/wishlist'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const db=readDb();return json(res,200,{productIds:db.wishlist.filter(x=>x.userId===u.id).map(x=>Number(x.productId))});}
   if(req.method==='POST'&&url==='/api/wishlist/toggle'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const b=await body(req);const productId=String(b.productId||'');const db=readDb();const p=db.products.find(x=>String(x.id)===productId);if(!p)return json(res,404,{error:'المنتج غير موجود'});const i=db.wishlist.findIndex(x=>x.userId===u.id&&String(x.productId)===productId);if(i>=0)db.wishlist.splice(i,1);else db.wishlist.push({userId:u.id,productId:Number(p.id),createdAt:new Date().toISOString()});writeDb(db);return json(res,200,{following:i<0,productId:p.id});}
   if(req.method==='GET'&&url==='/api/notifications'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const db=readDb();const notes=db.notifications.filter(n=>n.userId===u.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));return json(res,200,{items:notes,unread:notes.filter(n=>!n.read).length});}

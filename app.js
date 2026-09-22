@@ -58,10 +58,20 @@ function saveCart(){localStorage.setItem("loqataCart",JSON.stringify(cart));}
 function saveProducts(){localStorage.setItem("loqataProducts",JSON.stringify(products));}
 function saveOrders(){localStorage.setItem("loqataOrders",JSON.stringify(orders));}
 function saveFavorites(){localStorage.setItem("loqataFavorites",JSON.stringify(favorites));}
-async function toggleFavorite(id){const adding=!favorites.includes(id);favorites=adding?[...favorites,id]:favorites.filter(x=>x!==id);saveFavorites();renderProducts();if(authenticatedUser){try{await apiRequest("/api/wishlist/toggle",{method:"POST",body:JSON.stringify({productId:id})});toast(adding?"تمت المتابعة — سنبلغك عند انخفاض السعر أو عودة المخزون":"تم إلغاء متابعة المنتج");}catch(e){toast(e.message);}}else toast(adding?"أضيف للمفضلة":"أزيل من المفضلة");}
+async function toggleFavorite(id){const adding=!favorites.includes(id);favorites=adding?[...favorites,id]:favorites.filter(x=>x!==id);saveFavorites();renderProducts();loadRecommendations();if(authenticatedUser){try{await apiRequest("/api/wishlist/toggle",{method:"POST",body:JSON.stringify({productId:id})});toast(adding?"تمت المتابعة — سنبلغك عند انخفاض السعر أو عودة المخزون":"تم إلغاء متابعة المنتج");}catch(e){toast(e.message);}}else toast(adding?"أضيف للمفضلة":"أزيل من المفضلة");}
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove("show"),1800);}
 function effectiveProductPriceForFilter(p){const now=Date.now();const sale=Number(p.salePrice);return Number.isFinite(sale)&&sale>0&&sale<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt).getTime()>now)?sale:Number(p.price||0);}
 function isOnOffer(p){return effectiveProductPriceForFilter(p)<Number(p.price||0);}
+async function loadRecommendations(){
+  const box=$("recommendations"); if(!box)return;
+  try{
+    const data=await apiRequest('/api/recommendations');
+    const items=data.items||[];
+    const hint=$("recommendationHint"); if(hint)hint.textContent=data.personalized?`مبنية على ${data.basedOn||'نشاطك'}`:'اختيارات مقترحة لك';
+    box.innerHTML=items.length?items.map(p=>`<article class="recommendation-card">${visualMarkup(p,'recommendation-img')}<div class="recommendation-body"><h3>${escapeHtml(p.name)}</h3>${priceMarkup(p)}<div class="rating-inline"><span class="stars">${ratingStars(p.ratingAverage)}</span><small>${p.ratingCount||0} تقييم</small></div>${isOnOffer(p)?'<span class="smart-offer-badge">⚡ عرض خاص</span>':''}<div class="recommendation-actions"><button class="secondary-btn small-btn" data-details="${p.id}" type="button">التفاصيل</button><button class="add-btn small-btn" data-add="${p.id}" type="button">أضف للسلة</button></div></div></article>`).join(''):'<p class="empty">سنضيف لك مقترحات جديدة قريبًا.</p>';
+  }catch(e){box.innerHTML='<p class="empty">تعذر تحميل المقترحات الآن.</p>';}
+}
+
 function renderProducts(){
   const q=$("searchInput").value.trim().toLowerCase();
   const min=Number(minPriceFilter||0), max=maxPriceFilter===""?Infinity:Number(maxPriceFilter);
@@ -260,7 +270,7 @@ function showAuth(){
 }
 function closeAuth(){ $("authModal").hidden=true; $("authOverlay").classList.add("hidden"); document.body.classList.remove("modal-open"); }
 async function loadAuth(){try{authenticatedUser=(await apiRequest('/api/auth/me')).user;await syncWishlistFromServer();}catch{authenticatedUser=null;}}
-async function syncWishlistFromServer(){if(!authenticatedUser)return;try{const r=await apiRequest('/api/wishlist');const remote=Array.isArray(r.productIds)?r.productIds:[];favorites=[...new Set([...favorites,...remote])];saveFavorites();renderProducts();}catch(e){console.warn('تعذر مزامنة المتابعة',e.message);}}
+async function syncWishlistFromServer(){if(!authenticatedUser)return;try{const r=await apiRequest('/api/wishlist');const remote=Array.isArray(r.productIds)?r.productIds:[];favorites=[...new Set([...favorites,...remote])];saveFavorites();renderProducts();loadRecommendations();}catch(e){console.warn('تعذر مزامنة المتابعة',e.message);}}
 $("closeAuth")?.addEventListener("click",closeAuth); $("authOverlay")?.addEventListener("click",closeAuth);
 $("authMode")?.addEventListener("click",()=>{authMode=authMode==="login"?"register":"login";$("authTitle").textContent=authMode==="login"?"🔐 تسجيل الدخول":"📝 إنشاء حساب";$("authName").hidden=authMode==="login";$("authSubmit").textContent=authMode==="login"?"تسجيل الدخول":"إنشاء الحساب";$("authMode").textContent=authMode==="login"?"إنشاء حساب جديد":"لدي حساب بالفعل";$("authMessage").textContent="";});
 $("closeOtp")?.addEventListener("click",()=>{ $("otpModal").hidden=true; $("otpOverlay").classList.add("hidden"); $("checkoutModal").hidden=false; });
@@ -275,7 +285,7 @@ handleSetting=function(action){if(action==="account"){showAuth();return;}return 
 loadAuth();
 
 // v2.5: تحميل المنتجات من قاعدة البيانات عند تشغيل المتجر
-(async function syncProductsFromServer(){try{const remote=await apiRequest("/api/products");if(Array.isArray(remote)&&remote.length){products=remote;saveProducts();renderProducts();}}catch(err){console.warn("تعذر الاتصال بقاعدة البيانات",err.message);}})();
+(async function syncProductsFromServer(){try{const remote=await apiRequest("/api/products");if(Array.isArray(remote)&&remote.length){products=remote;saveProducts();renderProducts();}loadRecommendations();}catch(err){console.warn("تعذر الاتصال بقاعدة البيانات",err.message);loadRecommendations();}})();
 
 // v2.8.0: صفحة حساب العميل المرتبطة بقاعدة البيانات
 async function openCustomerAccount(){
