@@ -150,7 +150,8 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
   if(req.method==='POST'&&url==='/api/payments/webhook'){
     let raw='';req.on('data',c=>raw+=c);await new Promise(resolve=>req.on('end',resolve));
     let payload={};try{payload=JSON.parse(raw||'{}')}catch{return json(res,400,{error:'JSON غير صالح'});}
-    const signature=req.headers['x-payment-signature']||req.headers['hmac'];
+    const callbackUrl=new URL(req.url,`http://${req.headers.host||'localhost'}`);
+    const signature=callbackUrl.searchParams.get('hmac')||req.headers['x-payment-signature']||req.headers['hmac'];
     if(!paymentService.verifyWebhook(payload,signature))return json(res,401,{error:'توقيع webhook غير صالح'});
     const obj=payload?.obj||{}; const paymobOrderId=String(obj.order?.id||'');
     const reference=String(obj.special_reference||obj.extras?.loqata_order_id||'');

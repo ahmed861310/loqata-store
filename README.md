@@ -277,6 +277,25 @@ npm run preflight:production
 الفحص يتحقق من Node.js 20+، وبيئة production، وتفعيل Paymob، واكتمال متغيرات البيئة، وروابط HTTPS، وصحة Syntax للخادم. لا يعرض أي أسرار أو قيم مفاتيح.
 
 
+## Paymob TEST — Loqata v5.12.4
+
+تم تجهيز طبقة Paymob للاختبار باستخدام **Integration ID = 5937211**. لا يتم حفظ Secret Key أو HMAC Secret أو Public Key داخل المشروع.
+
+إعدادات الاستضافة المطلوبة:
+- `PAYMENT_PROVIDER=paymob`
+- `PAYMENT_CURRENCY=EGP`
+- `PAYMOB_BASE_URL=https://accept.paymob.com`
+- `PAYMOB_INTEGRATION_ID=5937211`
+- `PAYMOB_SECRET_KEY` = Secret Key من Paymob Test (على الاستضافة فقط)
+- `PAYMOB_PUBLIC_KEY` = Public Key من Paymob Test
+- `PAYMOB_HMAC_SECRET` = HMAC Secret من Paymob Test (على الاستضافة فقط)
+- `PAYMOB_NOTIFICATION_URL=https://YOUR_DOMAIN/api/payments/webhook`
+- `PAYMOB_REDIRECT_URL=https://YOUR_DOMAIN/payment-result.html`
+
+تم تحديث استقبال Webhook لقبول `hmac` في Query String كما ترسله Paymob في Transaction Callbacks، مع الإبقاء على دعم التوقيع في الـ headers للاختبارات المحلية.
+
+**مهم:** لا تستخدم أي مفاتيح ظهرت في المحادثة؛ أعد إنشاء Secret Key وHMAC Secret ثم ضع القيم الجديدة في متغيرات البيئة على السيرفر. Paymob توصي بأن يكون الـ webhook متاحًا عبر HTTPS عام، وأن يكون الـ webhook هو مصدر الحقيقة لحالة الدفع.
+
 ## Paymob TEST
 
 Set `PAYMENT_PROVIDER=paymob`, then configure `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_INTEGRATION_ID`, `PAYMOB_HMAC_SECRET`, `PAYMOB_NOTIFICATION_URL=https://YOUR_DOMAIN/api/payments/webhook`, and `PAYMOB_REDIRECT_URL=https://YOUR_DOMAIN/payment-result` in the hosting environment. Never commit these secrets.
