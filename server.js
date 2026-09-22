@@ -367,5 +367,22 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
 function publicUser(u){return {id:u.id,name:u.name,email:u.email,role:u.role,createdAt:u.createdAt};}
 function login(res,u){const sid=crypto.randomBytes(32).toString('hex');sessions.set(sid,{userId:u.id,createdAt:Date.now()});res.setHeader('Set-Cookie',`loqata_session=${sid}; HttpOnly; Path=/; SameSite=Lax`);return json(res,200,{user:publicUser(u)});}
 
-const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});if(url.pathname.startsWith('/api/'))return await api(req,res,url.pathname);let file=url.pathname==='/'?'/index.html':url.pathname;const full=path.normalize(path.join(ROOT,file));if(!full.startsWith(ROOT)||!fs.existsSync(full)||fs.statSync(full).isDirectory())return json(res,404,{error:'Not found'});const ext=path.extname(full);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream'});fs.createReadStream(full).pipe(res);}catch(e){console.error(e);json(res,500,{error:'Server error'});}});
+const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});
+if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
+  const isProd=NODE_ENV==='production';
+  const checks={
+    nodeEnv:isProd,
+    otpWebhook:!!process.env.OTP_WEBHOOK_URL,
+    paymentProvider:paymentService.provider==='paymob',
+    paymobSecret:!!process.env.PAYMOB_SECRET_KEY,
+    paymobPublic:!!process.env.PAYMOB_PUBLIC_KEY,
+    paymobIntegration:!!process.env.PAYMOB_INTEGRATION_ID,
+    paymobHmac:!!process.env.PAYMOB_HMAC_SECRET,
+    paymobWebhook:!!process.env.PAYMOB_NOTIFICATION_URL,
+    paymobRedirect:!!process.env.PAYMOB_REDIRECT_URL
+  };
+  const missing=Object.entries(checks).filter(([,ok])=>!ok).map(([key])=>key);
+  return json(res,200,{ok:missing.length===0,environment:NODE_ENV,provider:paymentService.provider,checks,missing});
+}
+if(url.pathname.startsWith('/api/'))return await api(req,res,url.pathname);let file=url.pathname==='/'?'/index.html':url.pathname;const full=path.normalize(path.join(ROOT,file));if(!full.startsWith(ROOT)||!fs.existsSync(full)||fs.statSync(full).isDirectory())return json(res,404,{error:'Not found'});const ext=path.extname(full);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream'});fs.createReadStream(full).pipe(res);}catch(e){console.error(e);json(res,500,{error:'Server error'});}});
 server.listen(PORT,()=>console.log(`لقطة يعمل على http://localhost:${PORT}`));

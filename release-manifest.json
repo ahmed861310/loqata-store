@@ -1,8 +1,9 @@
 {
-  "version": "5.8.0",
-  "purpose": "end-to-end payment flow tested in local demo mode",
+  "version": "5.9.0",
+  "purpose": "production-readiness gate added after local E2E payment validation",
   "source": "loqata-v5.6.0-payment-ready.zip",
   "manual_production_payment_test_required": true,
   "e2e_test": "PASS",
-  "manual_paymob_test_required": true
+  "manual_paymob_test_required": true,
+  "production_readiness_endpoint": "/api/production-readiness"
 }
