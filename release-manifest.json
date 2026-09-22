@@ -1,6 +1,8 @@
 {
-  "version": "5.7.0",
-  "purpose": "full order/payment flow validation release",
+  "version": "5.8.0",
+  "purpose": "end-to-end payment flow tested in local demo mode",
   "source": "loqata-v5.6.0-payment-ready.zip",
-  "manual_production_payment_test_required": true
+  "manual_production_payment_test_required": true,
+  "e2e_test": "PASS",
+  "manual_paymob_test_required": true
 }
