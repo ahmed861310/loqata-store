@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 4.1.0</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 4.3.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -165,8 +165,14 @@
     </div>
   </section>
 
+
+  <section id="adminOrderDetailsModal" class="admin-order-details-modal" role="dialog" aria-modal="true" aria-labelledby="adminOrderDetailsTitle" hidden>
+    <div class="product-modal-head"><h2 id="adminOrderDetailsTitle">📦 تفاصيل الطلب</h2><button id="closeAdminOrderDetails" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <div id="adminOrderDetails" class="admin-order-details-body"></div>
+  </section>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 4.1.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 4.3.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 
   <div id="paymentDemoOverlay" class="overlay hidden"></div>

@@ -155,6 +155,38 @@ async function api(req,res,url){
     const customerOrders=db.orders.filter(o=>o.userId===u.id); return json(res,200,{customer:{...publicUser(u),phone:customerOrders[0]?.phone||''},orders:customerOrders});
   }
   if(req.method==='POST'&&url==='/api/admin/products'){const b=await body(req);if(!b.name||!Number.isFinite(Number(b.price))||!Number.isFinite(Number(b.stock)))return json(res,400,{error:'بيانات المنتج غير مكتملة'});const db=readDb();const product={id:Date.now(),name:String(b.name).trim(),price:Number(b.price),stock:Number(b.stock),category:b.category||'home',emoji:b.emoji||'🛍️',image:b.image||'',description:b.description||''};db.products.push(product);writeDb(db);return json(res,201,product);}
+  if(req.method==='GET'&&url.startsWith('/api/admin/orders/')&&url.endsWith('/details')){
+    const orderId=url.split('/')[4]; const db=readDb(); const o=db.orders.find(x=>String(x.id)===String(orderId));
+    if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    const timeline=Array.isArray(o.timeline)?o.timeline:(Array.isArray(o.statusHistory)?o.statusHistory.map(x=>({type:'status',title:`حالة الطلب: ${x.status}`,note:'',date:x.date,actorName:'مدير المتجر'})):[]);
+    return json(res,200,{order:o,timeline,notes:Array.isArray(o.adminNotes)?o.adminNotes:[]});
+  }
+  if(req.method==='POST'&&url.startsWith('/api/admin/orders/')&&url.endsWith('/notes')){
+    const orderId=url.split('/')[4]; const b=await body(req); const text=String(b.text||'').trim();
+    if(!text||text.length>1000)return json(res,400,{error:'الملاحظة مطلوبة وبحد أقصى 1000 حرف'});
+    const db=readDb(); const o=db.orders.find(x=>String(x.id)===String(orderId)); if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    o.adminNotes=Array.isArray(o.adminNotes)?o.adminNotes:[]; o.timeline=Array.isArray(o.timeline)?o.timeline:[];
+    const now=new Date().toISOString(); o.adminNotes.push({id:id('note'),text,date:now,actorName:'مدير المتجر'});
+    o.timeline.push({id:id('evt'),type:'note',title:'إضافة ملاحظة',note:text,date:now,actorName:'مدير المتجر'});
+    writeDb(db); return json(res,200,{order:o,timeline:o.timeline,notes:o.adminNotes});
+  }
+  if(req.method==='PATCH'&&url.startsWith('/api/admin/orders/')&&url.endsWith('/details')){
+    const orderId=url.split('/')[4]; const b=await body(req); const db=readDb(); const o=db.orders.find(x=>String(x.id)===String(orderId));
+    if(!o)return json(res,404,{error:'الطلب غير موجود'});
+    if(b.status && !ORDER_STATUSES.has(String(b.status)))return json(res,400,{error:'حالة الطلب غير صالحة'});
+    const now=new Date().toISOString(); o.timeline=Array.isArray(o.timeline)?o.timeline:[]; o.statusHistory=Array.isArray(o.statusHistory)?o.statusHistory:[];
+    if(b.status && String(b.status)!==String(o.status)){
+      const from=o.status||'غير محدد'; o.status=String(b.status); o.statusHistory.push({status:o.status,date:now});
+      o.timeline.push({id:id('evt'),type:'status',title:`تغيير الحالة: ${o.status}`,note:`من: ${from} ← إلى: ${o.status}`,date:now,actorName:'مدير المتجر'});
+    }
+    if(b.paymentStatus!==undefined && String(b.paymentStatus)!==String(o.paymentStatus||'')){
+      const old=o.paymentStatus||'غير محدد'; o.paymentStatus=String(b.paymentStatus);
+      o.timeline.push({id:id('evt'),type:'payment',title:'تحديث حالة الدفع',note:`من: ${old} ← إلى: ${o.paymentStatus}`,date:now,actorName:'مدير المتجر'});
+    }
+    if(b.shippingCarrier!==undefined && String(b.shippingCarrier)!==String(o.shippingCarrier||'')){o.shippingCarrier=String(b.shippingCarrier).trim();o.timeline.push({id:id('evt'),type:'shipping',title:'تحديث شركة الشحن',note:o.shippingCarrier||'تم حذف شركة الشحن',date:now,actorName:'مدير المتجر'});}
+    if(b.trackingNumber!==undefined && String(b.trackingNumber)!==String(o.trackingNumber||'')){o.trackingNumber=String(b.trackingNumber).trim();o.timeline.push({id:id('evt'),type:'shipping',title:'تحديث رقم التتبع',note:o.trackingNumber||'تم حذف رقم التتبع',date:now,actorName:'مدير المتجر'});}
+    o.updatedAt=now; writeDb(db); return json(res,200,o);
+  }
   if(req.method==='DELETE'&&url.startsWith('/api/admin/orders/')){const orderId=url.split('/').pop();const db=readDb();const before=db.orders.length;db.orders=db.orders.filter(o=>String(o.id)!==orderId);if(db.orders.length===before)return json(res,404,{error:'الطلب غير موجود'});writeDb(db);return json(res,200,{ok:true});}
   if(req.method==='PATCH'&&url.startsWith('/api/admin/orders/')){const orderId=url.split('/').pop();const b=await body(req);const db=readDb();const o=db.orders.find(x=>String(x.id)===orderId);if(!o)return json(res,404,{error:'الطلب غير موجود'});if(b.status && !ORDER_STATUSES.has(String(b.status)))return json(res,400,{error:'حالة الطلب غير صالحة'});if(b.status){o.status=String(b.status);o.statusHistory=Array.isArray(o.statusHistory)?o.statusHistory:[];o.statusHistory.push({status:o.status,date:new Date().toISOString()});}writeDb(db);return json(res,200,o);}
   if(req.method==='DELETE'&&url.startsWith('/api/admin/products/')){const productId=url.split('/').pop();const db=readDb();const before=db.products.length;db.products=db.products.filter(p=>String(p.id)!==productId);if(db.products.length===before)return json(res,404,{error:'المنتج غير موجود'});writeDb(db);return json(res,200,{ok:true});}

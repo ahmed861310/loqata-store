@@ -23,6 +23,7 @@ let favorites = readJson("loqataFavorites", []); if (!Array.isArray(favorites)) 
 let currentCategory = "all";
 let favoritesOnly = false;
 let adminOrderQuery = "";
+let adminOrderDetailsId = null;
 let customer = readJson("loqataCustomer", {name:"",phone:"",address:""});
 let shippingSettings = {zones:[],freeShippingThreshold:1000};
 let selectedCoupon = null;
@@ -99,6 +100,8 @@ function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.ad
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const add=e.target.closest("[data-add]");if(add){addToCart(Number(add.dataset.add));return;}const details=e.target.closest("[data-details]");if(details){openProductDetails(Number(details.dataset.details));return;}const detailAdd=e.target.closest("[data-detail-add]");if(detailAdd){addToCart(Number(detailAdd.dataset.detailAdd));closeProductDetails();return;}const plus=e.target.closest("[data-plus]");if(plus){changeQty(Number(plus.dataset.plus),1);return;}const minus=e.target.closest("[data-minus]");if(minus){changeQty(Number(minus.dataset.minus),-1);return;}const remove=e.target.closest("[data-remove]");if(remove){cart=cart.filter(x=>x.id!==Number(remove.dataset.remove));saveCart();renderCart();return;}const setting=e.target.closest("[data-setting]");if(setting){handleSetting(setting.dataset.setting);return;}const favFilter=e.target.closest("[data-favorites-filter]");if(favFilter){favoritesOnly=!favoritesOnly;favFilter.classList.toggle("active",favoritesOnly);renderProducts();return;}const cat=e.target.closest(".cat");if(cat){document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));cat.classList.add("active");currentCategory=cat.dataset.category;renderProducts();return;}const saveProduct=e.target.closest("[data-save-product]");if(saveProduct){const id=Number(saveProduct.dataset.saveProduct);const p=products.find(x=>x.id===id);if(!p)return;document.querySelectorAll(`[data-product-id="${id}"]`).forEach(el=>{if(el.dataset.field==='price')p.price=Math.max(0,Number(el.value)||0);else if(el.dataset.field==='salePrice')p.salePrice=el.value?Math.max(0,Number(el.value)):null;else if(el.dataset.field==='stock')p.stock=Math.max(0,Number(el.value)||0);else if(el.dataset.field)p[el.dataset.field]=el.value.trim();});p.name=p.name||'منتج بدون اسم';p.emoji=p.emoji||'🛍️';apiRequest(`/api/admin/products/${id}`,{method:'PATCH',body:JSON.stringify(p)}).then(saved=>{products=products.map(x=>x.id===id?saved:x);cart=cart.map(i=>i.id===id?{...i,...saved,price:effectivePrice(saved)}:i);saveProducts();saveCart();renderProducts();renderCart();renderAdmin();toast('تم حفظ تفاصيل المنتج في قاعدة البيانات');}).catch(err=>toast(err.message));return;}const del=e.target.closest("[data-delete-product]");if(del){const id=Number(del.dataset.deleteProduct);apiRequest(`/api/admin/products/${id}`,{method:'DELETE'}).then(()=>{products=products.filter(p=>p.id!==id);cart=cart.filter(i=>i.id!==id);saveProducts();saveCart();renderProducts();renderCart();renderAdmin();toast('تم حذف المنتج من قاعدة البيانات');}).catch(err=>toast(err.message));return;}const delOrder=e.target.closest('[data-delete-order]');if(delOrder){const id=Number(delOrder.dataset.deleteOrder);apiRequest(`/api/admin/orders/${id}`,{method:'DELETE'}).then(()=>{orders=orders.filter(o=>o.id!==id);saveOrders();renderAdmin();toast('تم حذف الطلب من قاعدة البيانات');}).catch(err=>toast(err.message));return;}});
 document.addEventListener('change',e=>{const select=e.target.closest('[data-order-status-select]');if(select){const o=orders.find(x=>x.id===Number(select.dataset.orderStatusSelect));if(o){apiRequest(`/api/admin/orders/${o.id}`,{method:'PATCH',body:JSON.stringify({status:select.value})}).then(saved=>{o.status=saved.status;saveOrders();renderAdmin();toast('تم تحديث حالة الطلب في قاعدة البيانات');}).catch(err=>toast(err.message));}}if(e.target.id==='orderStatusFilter')renderAdmin();});
+$("closeAdminOrderDetails")?.addEventListener("click",closeAdminOrderDetails);
+document.addEventListener("click",e=>{const view=e.target.closest("[data-view-order]");if(view){e.preventDefault();openAdminOrderDetails(view.dataset.viewOrder);}});
 $("searchInput").addEventListener("input",renderProducts);$("menuBtn").addEventListener("click",toggleSettingsMenu);
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{if(!e.target.closest(".topbar-actions"))closeSettingsMenu();});
@@ -123,6 +126,50 @@ $("exportDataBtn")?.addEventListener("click",exportData);$("importDataInput")?.a
 // v2.4.0: اتصال واجهة العميل بخادم المصادقة الحقيقي
 let authMode = "login";
 let authenticatedUser = null;
+async 
+async function openAdminOrderDetails(orderId){
+  adminOrderDetailsId=String(orderId);
+  const box=$("adminOrderDetails"); if(!box)return;
+  $("adminOrderDetailsModal").hidden=false;
+  document.body.classList.add("modal-open");
+  box.innerHTML='<p class="empty">جارٍ تحميل تفاصيل الطلب...</p>';
+  try{
+    const data=await apiRequest(`/api/admin/orders/${encodeURIComponent(orderId)}/details`);
+    renderAdminOrderDetails(data);
+  }catch(err){box.innerHTML=`<p class="empty">${escapeHtml(err.message)}</p>`;}
+}
+function renderAdminOrderDetails(data){
+  const o=data.order||{}, timeline=data.timeline||[], notes=data.notes||[];
+  const items=(o.items||[]).map(i=>`<tr><td>${escapeHtml(i.name)}</td><td>${Number(i.qty||0)}</td><td>${money(i.price)}</td><td>${money(Number(i.qty||0)*Number(i.price||0))}</td></tr>`).join("");
+  const history=timeline.length?timeline.map(x=>`<div class="timeline-item"><div class="timeline-dot"></div><div><strong>${escapeHtml(x.title||x.type||"تحديث")}</strong><p>${escapeHtml(x.note||"")}</p><small>${escapeHtml(x.actorName||"مدير المتجر")} — ${escapeHtml(new Date(x.date||Date.now()).toLocaleString("ar-EG"))}</small></div></div>`).join(""):'<p class="empty">لا يوجد سجل نشاط بعد.</p>';
+  const notesHtml=notes.length?notes.map(n=>`<div class="admin-note-card"><strong>${escapeHtml(n.actorName||"مدير المتجر")}</strong><small>${escapeHtml(new Date(n.date||Date.now()).toLocaleString("ar-EG"))}</small><p>${escapeHtml(n.text)}</p></div>`).join(""):'<p class="empty">لا توجد ملاحظات.</p>';
+  $("adminOrderDetails").innerHTML=`
+    <div class="order-detail-grid">
+      <div class="order-detail-card"><h3>📦 بيانات الطلب</h3><p><strong>رقم الطلب:</strong> #${escapeHtml(o.id)}</p><p><strong>التاريخ:</strong> ${escapeHtml(o.date||"")}</p><p><strong>العميل:</strong> ${escapeHtml(o.name||"")}</p><p><strong>الهاتف:</strong> ${escapeHtml(o.phone||"")}</p><p><strong>العنوان:</strong> ${escapeHtml(o.address||"")}</p></div>
+      <div class="order-detail-card"><h3>💳 الدفع والشحن</h3><p><strong>طريقة الدفع:</strong> ${escapeHtml(o.paymentMethodName||o.paymentMethod||"غير محدد")}</p><p><strong>حالة الدفع:</strong> <span class="status-pill">${escapeHtml(o.paymentStatus||"غير محدد")}</span></p><p><strong>منطقة الشحن:</strong> ${escapeHtml(o.shippingZoneName||"غير محددة")}</p><p><strong>شركة الشحن:</strong> ${escapeHtml(o.shippingCarrier||"غير محددة")}</p><p><strong>رقم التتبع:</strong> ${escapeHtml(o.trackingNumber||"غير موجود")}</p></div>
+    </div>
+    <div class="order-detail-card"><h3>🛒 المنتجات</h3><div class="table-scroll"><table class="order-detail-table"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${items||'<tr><td colspan="4">لا توجد منتجات</td></tr>'}</tbody></table></div>
+      <div class="detail-totals"><span>قبل الخصم: <b>${money(o.subtotal??o.total)}</b></span><span>الخصم: <b>${money(o.discount||0)}</b></span><span>الشحن: <b>${money(o.shippingFee||0)}</b></span><strong>الإجمالي النهائي: ${money(o.total)}</strong></div>
+    </div>
+    <div class="order-detail-card"><h3>⚙️ إجراءات الطلب</h3><div class="detail-actions">
+      <label>الحالة<select id="detailStatus"><option ${o.status==="جديد"?"selected":""}>جديد</option><option ${o.status==="قيد التجهيز"?"selected":""}>قيد التجهيز</option><option ${o.status==="تم الشحن"?"selected":""}>تم الشحن</option><option ${o.status==="مكتمل"?"selected":""}>مكتمل</option><option ${o.status==="ملغي"?"selected":""}>ملغي</option></select></label>
+      <label>حالة الدفع<select id="detailPaymentStatus"><option value="pending" ${o.paymentStatus==="pending"?"selected":""}>معلق</option><option value="paid" ${o.paymentStatus==="paid"?"selected":""}>مدفوع</option><option value="failed" ${o.paymentStatus==="failed"?"selected":""}>فشل</option></select></label>
+      <label>شركة الشحن<input id="detailCarrier" value="${escapeHtml(o.shippingCarrier||"")}"></label>
+      <label>رقم التتبع<input id="detailTracking" value="${escapeHtml(o.trackingNumber||"")}"></label>
+      <button type="button" class="primary-btn" id="saveOrderDetails">💾 حفظ التحديث</button><button type="button" class="secondary-btn" id="printOrderDetails">🖨️ طباعة</button>
+    </div></div>
+    <div class="order-detail-card"><h3>🕐 سجل الطلب</h3><div class="timeline">${history}</div></div>
+    <div class="order-detail-card"><h3>📝 ملاحظات الإدارة</h3><div>${notesHtml}</div><form id="orderNoteForm" class="note-form"><textarea id="newOrderNote" rows="3" placeholder="اكتب ملاحظة داخلية..."></textarea><button class="secondary-btn" type="submit">إضافة ملاحظة</button></form></div>`;
+  $("saveOrderDetails").onclick=async()=>{
+    try{
+      const saved=await apiRequest(`/api/admin/orders/${encodeURIComponent(adminOrderDetailsId)}/details`,{method:"PATCH",body:JSON.stringify({status:$("detailStatus").value,paymentStatus:$("detailPaymentStatus").value,shippingCarrier:$("detailCarrier").value.trim(),trackingNumber:$("detailTracking").value.trim()})});
+      orders=orders.map(x=>String(x.id)===String(saved.id)?saved:x);saveOrders();renderAdmin();renderAdminOrderDetails({order:saved,timeline:saved.timeline||saved.statusHistory||[],notes:saved.adminNotes||[]});toast("تم تحديث الطلب");
+    }catch(err){toast(err.message);}
+  };
+  $("printOrderDetails").onclick=()=>window.print();
+  $("orderNoteForm").onsubmit=async e=>{e.preventDefault();const text=$("newOrderNote").value.trim();if(!text)return toast("اكتب الملاحظة أولًا");try{const data=await apiRequest(`/api/admin/orders/${encodeURIComponent(adminOrderDetailsId)}/notes`,{method:"POST",body:JSON.stringify({text})});renderAdminOrderDetails(data);toast("تمت إضافة الملاحظة");}catch(err){toast(err.message);}};
+}
+function closeAdminOrderDetails(){const m=$("adminOrderDetailsModal");if(m)m.hidden=true;adminOrderDetailsId=null;document.body.classList.remove("modal-open");}
 async function apiRequest(url, options={}){
   const response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
   const data = await response.json().catch(()=>({}));

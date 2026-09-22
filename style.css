@@ -217,3 +217,33 @@ body.modal-open{overflow:hidden}
 
 /* ===== v3.3.0 shipping ===== */
 .shipping-settings-form{grid-template-columns:1fr 1fr!important}.shipping-settings-form #shippingZonesAdmin{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;grid-column:1/-1}.shipping-settings-form #shippingZonesAdmin label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:#475569}.shipping-settings-form #shippingZonesAdmin input,.shipping-settings-form>input{padding:10px;border:1px solid var(--border);border-radius:10px;font:inherit}.shipping-settings-form .primary-btn{grid-column:1/-1}.checkout-form select{width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff;font:inherit}.checkout-form #applyCouponBtn{padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font:inherit;font-weight:700;margin-top:6px}@media(max-width:600px){.shipping-settings-form,.shipping-settings-form #shippingZonesAdmin{grid-template-columns:1fr}.shipping-settings-form #shippingZonesAdmin{grid-column:1}}
+
+/* v4.3 — إدارة الطلب الواحد بالتفصيل */
+.admin-order-details-modal{position:fixed;inset:3vh 4vw;z-index:100;max-width:1100px;margin:auto;background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:auto;max-height:94vh}
+.admin-order-details-modal[hidden]{display:none}
+.admin-order-details-body{padding:18px}
+.order-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.order-detail-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.order-detail-card h3{margin-top:0}
+.order-detail-card p{line-height:1.8}
+.order-detail-table{width:100%;border-collapse:collapse;min-width:560px}
+.order-detail-table th,.order-detail-table td{padding:10px;border-bottom:1px solid var(--border);text-align:right}
+.table-scroll{overflow:auto}
+.detail-totals{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end;padding-top:14px}
+.detail-totals strong{font-size:18px}
+.detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.detail-actions label{display:flex;flex-direction:column;gap:5px;font-weight:700}
+.detail-actions input,.detail-actions select,.note-form textarea{padding:11px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.small-btn{padding:9px 12px!important}
+.order-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.timeline{position:relative;padding-right:18px}
+.timeline:before{content:"";position:absolute;right:6px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.timeline-item{position:relative;display:flex;gap:14px;padding:0 0 18px 0}
+.timeline-dot{position:relative;z-index:1;flex:0 0 14px;height:14px;border-radius:50%;background:#111827;margin-top:5px}
+.timeline-item p{margin:5px 0}
+.timeline-item small{color:var(--muted)}
+.admin-note-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;background:#fafafa}
+.admin-note-card small{display:block;color:var(--muted);margin-top:3px}
+.note-form{display:grid;gap:8px;margin-top:12px}
+@media(max-width:700px){.admin-order-details-modal{inset:0;border-radius:0;max-height:100vh}.order-detail-grid,.detail-actions{grid-template-columns:1fr}.admin-order-details-body{padding:12px}}
+@media print{body>*:not(#adminOrderDetailsModal){display:none!important}.admin-order-details-modal{position:static!important;display:block!important;max-height:none!important;box-shadow:none!important;border:0!important}.admin-order-details-body{padding:0}}
