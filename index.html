@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 3.4.0</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 4.1.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -160,12 +160,12 @@
       <h3>إدارة المنتجات وتفاصيلها</h3><p class="admin-note">يمكنك إضافة رابط صورة مباشر للمنتج، وسيظهر بدل الإيموجي تلقائيًا.</p><div id="adminProducts" class="admin-list"></div>
       <h3>🎟️ إدارة كوبونات الخصم</h3><form id="couponForm" class="admin-add-form"><input id="couponCodeAdmin" required placeholder="كود الكوبون مثل SAVE10"><select id="couponTypeAdmin"><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option></select><input id="couponValueAdmin" required type="number" min="0" step="0.01" placeholder="قيمة الخصم"><input id="couponMinAdmin" type="number" min="0" step="0.01" placeholder="الحد الأدنى للطلب"><input id="couponExpiryAdmin" type="date"><input id="couponLabelAdmin" placeholder="وصف الكوبون"><button class="primary-btn" type="submit">إنشاء كوبون</button></form><div id="adminCoupons" class="admin-list"><p class="empty">جارٍ تحميل الكوبونات...</p></div>
       <h3>🚚 إعدادات الشحن والتوصيل</h3><form id="shippingSettingsForm" class="admin-add-form shipping-settings-form"><div id="shippingZonesAdmin"></div><input id="freeShippingThreshold" type="number" min="0" step="0.01" placeholder="الشحن المجاني فوق مبلغ"><button class="primary-btn" type="submit">حفظ إعدادات الشحن</button></form><p class="admin-note">يمكنك تعديل رسوم كل منطقة، والشحن المجاني يُحسب بعد الخصم وقبل إنشاء الطلب.</p><h3>إدارة الطلبات</h3><div class="admin-filters"><button type="button" id="exportDataBtn">💾 تصدير نسخة احتياطية</button><label class="import-label" for="importDataInput">📥 استيراد نسخة</label><input id="importDataInput" type="file" accept="application/json" hidden><input id="adminOrderSearch" type="search" placeholder="بحث في الطلبات..."><select id="orderStatusFilter"><option value="all">كل الحالات</option><option value="جديد">جديد</option><option value="قيد التجهيز">قيد التجهيز</option><option value="تم الشحن">تم الشحن</option><option value="مكتمل">مكتمل</option><option value="ملغي">ملغي</option></select><button type="button" id="csvExportBtn">📄 تصدير الطلبات CSV</button><button type="button" id="clearOrdersBtn">حذف الطلبات المكتملة</button></div><div id="adminOrders" class="admin-orders"></div>
-      <p class="admin-note">هذه لوحة محلية على نفس الجهاز؛ الطلبات تُحفظ في متصفحك فقط.</p>
+      <p class="admin-note">الطلبات والمنتجات تُدار عبر خادم لقطة وقاعدة البيانات؛ بيانات المتصفح تُستخدم فقط لتحسين تجربة العرض.</p>
     </div>
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 3.4.0 — جميع الحقوق محفوظة</footer>
+  <footer>© 2026 لقطة — الإصدار 4.1.0 — جميع الحقوق محفوظة</footer>
   <script src="app.js"></script>
 
   <div id="paymentDemoOverlay" class="overlay hidden"></div>
