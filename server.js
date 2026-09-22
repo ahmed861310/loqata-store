@@ -10,12 +10,13 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const sessions = new Map();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const ORDER_STATUSES = new Set(['جديد','قيد التجهيز','تم الشحن','مكتمل','ملغي']);
+const DEFAULT_SHIPPING = { zones: [{id:'cairo',name:'القاهرة',fee:40},{id:'giza',name:'الجيزة',fee:50},{id:'alexandria',name:'الإسكندرية',fee:60},{id:'other',name:'محافظات أخرى',fee:80}], freeShippingThreshold:1000 };
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [] }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING }, null, 2));
 }
-const readDb = () => JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+const readDb = () => { const db=JSON.parse(fs.readFileSync(DB_FILE,'utf8')); if(!db.shipping) db.shipping=DEFAULT_SHIPPING; return db; };
 const writeDb = db => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 const json = (res, code, body) => { res.writeHead(code, {'Content-Type':'application/json; charset=utf-8'}); res.end(JSON.stringify(body)); };
 const parseCookies = req => Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(x => { const i=x.indexOf('='); return [x.slice(0,i).trim(), decodeURIComponent(x.slice(i+1))]; }));
@@ -50,6 +51,7 @@ async function api(req,res,url){
   if(url.startsWith('/api/admin/') && (!currentUser(req)||currentUser(req).role!=='admin')) return json(res,403,{error:'يجب تسجيل دخول المدير'});
   if(req.method==='GET' && url==='/api/profile'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,{user:publicUser(u)});}
   if(req.method==='GET'&&url==='/api/products'){return json(res,200,readDb().products);}
+  if(req.method==='GET'&&url==='/api/shipping-settings'){const s=readDb().shipping||DEFAULT_SHIPPING;return json(res,200,s);}
   if(req.method==='POST'&&url==='/api/coupons/validate'){
     const b=await body(req); const code=String(b.code||'').trim().toUpperCase(); const subtotal=Number(b.subtotal||0); const coupon=readDb().coupons.find(c=>c.code===code&&c.active!==false);
     if(!coupon)return json(res,404,{error:'كود الخصم غير صحيح أو غير فعال'});
@@ -59,6 +61,8 @@ async function api(req,res,url){
     return json(res,200,{code,discount,total:Math.max(0,subtotal-discount),label:coupon.label||'خصم'});
   }
   if(url==='/api/admin/coupons' && req.method==='GET'){return json(res,200,readDb().coupons||[]);}
+  if(url==='/api/admin/shipping' && req.method==='GET'){return json(res,200,readDb().shipping||DEFAULT_SHIPPING);}
+  if(url==='/api/admin/shipping' && req.method==='PUT'){const b=await body(req);if(!Array.isArray(b.zones)||!Number.isFinite(Number(b.freeShippingThreshold))||b.zones.some(z=>!z.id||!z.name||!Number.isFinite(Number(z.fee))||Number(z.fee)<0))return json(res,400,{error:'إعدادات الشحن غير صحيحة'});const db=readDb();db.shipping={zones:b.zones.map(z=>({id:String(z.id),name:String(z.name).trim(),fee:Number(z.fee)})),freeShippingThreshold:Math.max(0,Number(b.freeShippingThreshold))};writeDb(db);return json(res,200,db.shipping);}
   if(url==='/api/admin/coupons' && req.method==='POST'){
     const b=await body(req); const code=String(b.code||'').trim().toUpperCase(); const value=Number(b.value);
     if(!code||!['percent','fixed'].includes(b.type)||!Number.isFinite(value)||value<=0)return json(res,400,{error:'بيانات الكوبون غير صحيحة'});
@@ -71,10 +75,10 @@ async function api(req,res,url){
   if(req.method==='POST'&&url==='/api/orders'){
     const u=currentUser(req); const b=await body(req);
     if(!b.name||!b.phone||!b.address||!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'بيانات الطلب غير مكتملة'});
-    const db=readDb(); const couponCode=String(b.couponCode||'').trim().toUpperCase(); const coupon=(db.coupons||[]).find(c=>c.code===couponCode&&c.active!==false); const byId=new Map(db.products.map(p=>[String(p.id),p])); let total=0; const items=[];
-    for(const item of b.items){const p=byId.get(String(item.id));const qty=Number(item.qty);if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'});const activePrice=Number(p.salePrice||0)>0&&Number(p.salePrice)<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt)>new Date())?Number(p.salePrice):Number(p.price||0);items.push({id:p.id,name:p.name,qty,price:activePrice,originalPrice:Number(p.price||0),salePrice:activePrice<Number(p.price||0)?activePrice:null});total+=qty*activePrice;}
+    const db=readDb(); const couponCode=String(b.couponCode||'').trim().toUpperCase(); const coupon=(db.coupons||[]).find(c=>c.code===couponCode&&c.active!==false); const byId=new Map(db.products.map(p=>[String(p.id),p])); let subtotal=0; const items=[];
+    for(const item of b.items){const p=byId.get(String(item.id));const qty=Number(item.qty);if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'});const activePrice=Number(p.salePrice||0)>0&&Number(p.salePrice)<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt)>new Date())?Number(p.salePrice):Number(p.price||0);items.push({id:p.id,name:p.name,qty,price:activePrice,originalPrice:Number(p.price||0),salePrice:activePrice<Number(p.price||0)?activePrice:null});subtotal+=qty*activePrice;}
     for(const item of items){const p=byId.get(String(item.id));p.stock=Number(p.stock||0)-item.qty;}
-    if(coupon){if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});const discount=coupon.type==='percent'?Math.min(total,total*Number(coupon.value)/100):Math.min(total,Number(coupon.value));total=Math.max(0,total-discount);} const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),items,total,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
+    let discount=0;if(coupon){if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});if(coupon.minSubtotal&&subtotal<Number(coupon.minSubtotal))return json(res,400,{error:`الحد الأدنى لاستخدام الكوبون هو ${coupon.minSubtotal}`});discount=coupon.type==='percent'?Math.min(subtotal,subtotal*Number(coupon.value)/100):Math.min(subtotal,Number(coupon.value));} const afterDiscount=Math.max(0,subtotal-discount);const shipping=(db.shipping?.zones||[]).find(z=>z.id===String(b.shippingZone))||null;if(!shipping)return json(res,400,{error:'اختر منطقة توصيل صحيحة'});const shippingFee=afterDiscount>=Number(db.shipping?.freeShippingThreshold||0)?0:Number(shipping.fee||0);const total=afterDiscount+shippingFee; const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),shippingZone:shipping.id,shippingZoneName:shipping.name,subtotal,discount,shippingFee,total,items,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
   }
   if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
   if(req.method==='GET'&&url==='/api/notifications'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const notes=readDb().orders.filter(o=>o.userId===u.id).map(o=>({id:o.id,title:'تحديث طلبك',message:`الطلب #${o.id} حالته الآن: ${o.status}`,date:o.statusHistory?.at(-1)?.date||o.date,status:o.status}));return json(res,200,notes);}
