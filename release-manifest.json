@@ -1,9 +1,11 @@
 {
-  "version": "5.9.0",
-  "purpose": "production-readiness gate added after local E2E payment validation",
-  "source": "loqata-v5.6.0-payment-ready.zip",
+  "version": "5.10.0",
+  "purpose": "automated Paymob integration mock test and production verification guide",
+  "source": "loqata-v5.9.0-production-readiness.zip",
   "manual_production_payment_test_required": true,
   "e2e_test": "PASS",
   "manual_paymob_test_required": true,
-  "production_readiness_endpoint": "/api/production-readiness"
+  "production_readiness_endpoint": "/api/production-readiness",
+  "automated_paymob_mock_test": "PASS",
+  "paymob_test_command": "npm run test:paymob"
 }

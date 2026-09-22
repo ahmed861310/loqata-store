@@ -4,6 +4,7 @@
   "private": true,
   "description": "Backend starter for Loqata Store using Node.js built-in modules",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:paymob": "node scripts/paymob-test.js"
   }
 }

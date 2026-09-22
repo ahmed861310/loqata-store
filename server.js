@@ -385,4 +385,5 @@ if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
   return json(res,200,{ok:missing.length===0,environment:NODE_ENV,provider:paymentService.provider,checks,missing});
 }
 if(url.pathname.startsWith('/api/'))return await api(req,res,url.pathname);let file=url.pathname==='/'?'/index.html':url.pathname;const full=path.normalize(path.join(ROOT,file));if(!full.startsWith(ROOT)||!fs.existsSync(full)||fs.statSync(full).isDirectory())return json(res,404,{error:'Not found'});const ext=path.extname(full);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream'});fs.createReadStream(full).pipe(res);}catch(e){console.error(e);json(res,500,{error:'Server error'});}});
-server.listen(PORT,()=>console.log(`لقطة يعمل على http://localhost:${PORT}`));
+if (require.main === module) server.listen(PORT,()=>console.log(`لقطة يعمل على http://localhost:${PORT}`));
+module.exports = server;
