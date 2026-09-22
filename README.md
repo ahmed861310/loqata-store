@@ -277,8 +277,6 @@ npm run preflight:production
 الفحص يتحقق من Node.js 20+، وبيئة production، وتفعيل Paymob، واكتمال متغيرات البيئة، وروابط HTTPS، وصحة Syntax للخادم. لا يعرض أي أسرار أو قيم مفاتيح.
 
 
-## v5.12.0 — إصلاحات فحص النسخة
-- تأمين إنشاء عملية الدفع الإلكتروني بحيث يعتمد على إجمالي الطلب المحسوب على الخادم.
-- رفض أي callback لا يطابق مبلغ الطلب أو العملة.
-- دعم HMAC القادم في query parameter `hmac` كما توضح وثائق Paymob.
-- تصحيح رابط Paymob webhook في ملف `.env.example`.
+## Paymob TEST
+
+Set `PAYMENT_PROVIDER=paymob`, then configure `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_INTEGRATION_ID`, `PAYMOB_HMAC_SECRET`, `PAYMOB_NOTIFICATION_URL=https://YOUR_DOMAIN/api/payments/webhook`, and `PAYMOB_REDIRECT_URL=https://YOUR_DOMAIN/payment-result` in the hosting environment. Never commit these secrets.
