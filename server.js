@@ -10,11 +10,15 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const sessions = new Map();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const ORDER_STATUSES = new Set(['جديد','قيد التجهيز','تم الشحن','مكتمل','ملغي']);
+const OTP_TTL_MS = 1000 * 60 * 5;
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RESEND_MS = 1000 * 60;
+const OTP_MAX_PER_HOUR = 5;
 const DEFAULT_SHIPPING = { zones: [{id:'cairo',name:'القاهرة',fee:40},{id:'giza',name:'الجيزة',fee:50},{id:'alexandria',name:'الإسكندرية',fee:60},{id:'other',name:'محافظات أخرى',fee:80}], freeShippingThreshold:1000 };
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING, otpChallenges: [] }, null, 2));
 }
 const readDb = () => { const db=JSON.parse(fs.readFileSync(DB_FILE,'utf8')); if(!db.shipping) db.shipping=DEFAULT_SHIPPING; return db; };
 const writeDb = db => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
@@ -25,8 +29,43 @@ const verify = (password, user) => crypto.timingSafeEqual(Buffer.from(hash(passw
 const body = req => new Promise((resolve,reject)=>{let s='';req.on('data',c=>s+=c);req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch(e){reject(e)}})});
 const currentUser = req => { const sid=parseCookies(req).loqata_session; const session=sessions.get(sid); if(!session)return null; if(Date.now()-session.createdAt>SESSION_TTL_MS){sessions.delete(sid);return null;} return readDb().users.find(u=>u.id===session.userId)||null; };
 const id = prefix => prefix + '_' + crypto.randomBytes(8).toString('hex');
+const normalizePhone = value => String(value||'').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g,'');
+const sendOtp = async (phone, code) => {
+  const webhook = process.env.OTP_WEBHOOK_URL;
+  if (!webhook) { if (process.env.NODE_ENV === 'production') throw new Error('لم يتم إعداد مزود رسائل SMS للإنتاج'); return {devCode: code}; }
+  const r = await fetch(webhook, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,message:`رمز تأكيد طلب لقطة: ${code}`})});
+  if (!r.ok) throw new Error('تعذر إرسال رسالة التحقق');
+  return {sent:true};
+};
 
 async function api(req,res,url){
+  if(req.method==='POST' && url==='/api/otp/request'){
+    const b=await body(req); const phone=normalizePhone(b.phone);
+    if(!/^01\d{9}$/.test(phone)) return json(res,400,{error:'أدخل رقم هاتف مصري صحيح من 11 رقمًا'});
+    const db=readDb(); db.otpChallenges=Array.isArray(db.otpChallenges)?db.otpChallenges:[];
+    const now=Date.now(); db.otpChallenges=db.otpChallenges.filter(x=>now-x.createdAt<60*60*1000 && !x.verified);
+    const recent=db.otpChallenges.filter(x=>x.phone===phone && now-x.createdAt<60*60*1000);
+    if(recent.length>=OTP_MAX_PER_HOUR) return json(res,429,{error:'تم تجاوز حد طلبات التحقق. حاول لاحقًا'});
+    const active=recent.find(x=>!x.verified && now-x.createdAt<OTP_RESEND_MS);
+    if(active) return json(res,429,{error:'انتظر دقيقة قبل طلب رمز جديد'});
+    const code=String(crypto.randomInt(100000,1000000)); const salt=crypto.randomBytes(16).toString('hex');
+    const challenge={id:id('otp'),phone,salt,codeHash:crypto.scryptSync(code,salt,32).toString('hex'),createdAt:now,expiresAt:now+OTP_TTL_MS,attempts:0,verified:false};
+    db.otpChallenges.push(challenge); writeDb(db);
+    try { const delivery=await sendOtp(phone,code); return json(res,200,{challengeId:challenge.id,expiresIn:OTP_TTL_MS/1000,devCode:delivery.devCode||undefined,message:'تم إرسال رمز التحقق'}); }
+    catch(e){ db.otpChallenges=db.otpChallenges.filter(x=>x.id!==challenge.id); writeDb(db); return json(res,502,{error:e.message||'تعذر إرسال رمز التحقق'}); }
+  }
+  if(req.method==='POST' && url==='/api/otp/verify'){
+    const b=await body(req); const phone=normalizePhone(b.phone); const code=String(b.code||'').trim(); const db=readDb();
+    const c=(db.otpChallenges||[]).find(x=>x.id===String(b.challengeId||'')&&x.phone===phone&&!x.verified);
+    if(!c) return json(res,400,{error:'رمز التحقق غير صالح أو انتهت صلاحيته'});
+    if(Date.now()>c.expiresAt) return json(res,400,{error:'انتهت صلاحية رمز التحقق. اطلب رمزًا جديدًا'});
+    if(c.attempts>=OTP_MAX_ATTEMPTS) return json(res,429,{error:'تم تجاوز عدد المحاولات. اطلب رمزًا جديدًا'});
+    c.attempts++;
+    const supplied=crypto.scryptSync(code,c.salt,32).toString('hex');
+    if(!crypto.timingSafeEqual(Buffer.from(supplied,'hex'),Buffer.from(c.codeHash,'hex'))){writeDb(db);return json(res,400,{error:'رمز التحقق غير صحيح'});}
+    c.verified=true; c.verifiedAt=Date.now(); c.verificationToken=id('vfy'); c.verificationTokenExpiresAt=Date.now()+10*60*1000; writeDb(db);
+    return json(res,200,{verificationToken:c.verificationToken});
+  }
   if(req.method==='POST' && url==='/api/auth/register'){
     const b=await body(req); if(!b.name||!b.email||!b.password||b.password.length<8)return json(res,400,{error:'الاسم والبريد وكلمة المرور (8 أحرف على الأقل) مطلوبة'});
     const db=readDb(); const email=b.email.trim().toLowerCase(); if(db.users.some(u=>u.email===email))return json(res,409,{error:'البريد مستخدم بالفعل'});
@@ -76,10 +115,13 @@ async function api(req,res,url){
     const u=currentUser(req); const b=await body(req);
     if(!b.name||!b.phone||!b.address||!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'بيانات الطلب غير مكتملة'});
     if(String(b.paymentMethod||'cod')!=='cod')return json(res,400,{error:'طريقة الدفع المتاحة حاليًا هي الدفع عند الاستلام'});
-    const db=readDb(); const couponCode=String(b.couponCode||'').trim().toUpperCase(); const coupon=(db.coupons||[]).find(c=>c.code===couponCode&&c.active!==false); const byId=new Map(db.products.map(p=>[String(p.id),p])); let subtotal=0; const items=[];
+    const normalizedPhone=normalizePhone(b.phone); if(!/^01\d{9}$/.test(normalizedPhone))return json(res,400,{error:'رقم الهاتف غير صحيح'});
+    const db=readDb(); const verification=(db.otpChallenges||[]).find(x=>x.verificationToken===String(b.verificationToken||'')&&x.phone===normalizedPhone&&x.verified&&x.verificationTokenExpiresAt>Date.now());
+    if(!verification)return json(res,401,{error:'يجب تأكيد رقم الهاتف برمز OTP قبل اعتماد طلب الدفع عند الاستلام'});
+    verification.consumedAt=Date.now(); verification.verificationToken=null; const couponCode=String(b.couponCode||'').trim().toUpperCase(); const coupon=(db.coupons||[]).find(c=>c.code===couponCode&&c.active!==false); const byId=new Map(db.products.map(p=>[String(p.id),p])); let subtotal=0; const items=[];
     for(const item of b.items){const p=byId.get(String(item.id));const qty=Number(item.qty);if(!p||!Number.isInteger(qty)||qty<1||Number(p.stock||0)<qty)return json(res,400,{error:'أحد المنتجات غير متاح بالكمية المطلوبة'});const activePrice=Number(p.salePrice||0)>0&&Number(p.salePrice)<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt)>new Date())?Number(p.salePrice):Number(p.price||0);items.push({id:p.id,name:p.name,qty,price:activePrice,originalPrice:Number(p.price||0),salePrice:activePrice<Number(p.price||0)?activePrice:null});subtotal+=qty*activePrice;}
     for(const item of items){const p=byId.get(String(item.id));p.stock=Number(p.stock||0)-item.qty;}
-    let discount=0;if(coupon){if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});if(coupon.minSubtotal&&subtotal<Number(coupon.minSubtotal))return json(res,400,{error:`الحد الأدنى لاستخدام الكوبون هو ${coupon.minSubtotal}`});discount=coupon.type==='percent'?Math.min(subtotal,subtotal*Number(coupon.value)/100):Math.min(subtotal,Number(coupon.value));} const afterDiscount=Math.max(0,subtotal-discount);const shipping=(db.shipping?.zones||[]).find(z=>z.id===String(b.shippingZone))||null;if(!shipping)return json(res,400,{error:'اختر منطقة توصيل صحيحة'});const shippingFee=afterDiscount>=Number(db.shipping?.freeShippingThreshold||0)?0:Number(shipping.fee||0);const total=afterDiscount+shippingFee; const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:String(b.phone).trim(),address:String(b.address).trim(),shippingZone:shipping.id,shippingZoneName:shipping.name,paymentMethod:'cod',paymentMethodName:'الدفع عند الاستلام',subtotal,discount,shippingFee,total,items,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
+    let discount=0;if(coupon){if(coupon.expiresAt&&new Date(coupon.expiresAt)<new Date())return json(res,400,{error:'انتهت صلاحية الكوبون'});if(coupon.minSubtotal&&subtotal<Number(coupon.minSubtotal))return json(res,400,{error:`الحد الأدنى لاستخدام الكوبون هو ${coupon.minSubtotal}`});discount=coupon.type==='percent'?Math.min(subtotal,subtotal*Number(coupon.value)/100):Math.min(subtotal,Number(coupon.value));} const afterDiscount=Math.max(0,subtotal-discount);const shipping=(db.shipping?.zones||[]).find(z=>z.id===String(b.shippingZone))||null;if(!shipping)return json(res,400,{error:'اختر منطقة توصيل صحيحة'});const shippingFee=afterDiscount>=Number(db.shipping?.freeShippingThreshold||0)?0:Number(shipping.fee||0);const total=afterDiscount+shippingFee; const order={id:id('ord'),userId:u?.id||null,date:new Date().toISOString(),name:String(b.name).trim(),phone:normalizedPhone,address:String(b.address).trim(),shippingZone:shipping.id,shippingZoneName:shipping.name,paymentMethod:'cod',paymentMethodName:'الدفع عند الاستلام',subtotal,discount,shippingFee,total,items,status:'جديد',statusHistory:[{status:'جديد',date:new Date().toISOString()}]};db.orders.unshift(order);writeDb(db);return json(res,201,order);
   }
   if(req.method==='GET'&&url==='/api/orders/mine'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});return json(res,200,readDb().orders.filter(o=>o.userId===u.id));}
   if(req.method==='GET'&&url==='/api/notifications'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const notes=readDb().orders.filter(o=>o.userId===u.id).map(o=>({id:o.id,title:'تحديث طلبك',message:`الطلب #${o.id} حالته الآن: ${o.status}`,date:o.statusHistory?.at(-1)?.date||o.date,status:o.status}));return json(res,200,notes);}

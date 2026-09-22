@@ -98,6 +98,19 @@
   </section>
 
 
+  <div id="otpOverlay" class="overlay hidden"></div>
+  <section id="otpModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="otpTitle" hidden>
+    <div class="product-modal-head"><h2 id="otpTitle">تأكيد رقم الهاتف</h2><button id="closeOtp" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <form id="otpForm" class="checkout-form">
+      <p class="checkout-note">أرسلنا رمز تحقق من 6 أرقام إلى رقم هاتفك. أدخل الرمز لتأكيد طلب الدفع عند الاستلام.</p>
+      <label for="otpCode">رمز التحقق</label>
+      <input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9٠-٩]{6}" required placeholder="••••••">
+      <p id="otpMessage" class="checkout-note"></p>
+      <button class="primary-btn" type="submit">تأكيد الرقم واعتماد الطلب</button>
+      <button id="resendOtp" class="secondary-btn" type="button">إعادة إرسال الرمز</button>
+    </form>
+  </section>
+
   <div id="authOverlay" class="overlay hidden"></div>
   <section id="authModal" class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
     <div class="product-modal-head"><h2 id="authTitle">🔐 حساب العميل</h2><button id="closeAuth" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>

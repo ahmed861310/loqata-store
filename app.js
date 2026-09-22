@@ -26,6 +26,7 @@ let adminOrderQuery = "";
 let customer = readJson("loqataCustomer", {name:"",phone:"",address:""});
 let shippingSettings = {zones:[],freeShippingThreshold:1000};
 let selectedCoupon = null;
+let otpState = {challengeId:"",phone:"",name:"",address:"",couponCode:""};
 const ADMIN_PIN = "1234";
 let adminUnlocked = false;
 function saveCustomer(){localStorage.setItem("loqataCustomer",JSON.stringify(customer));}
@@ -143,6 +144,10 @@ function closeAuth(){ $("authModal").hidden=true; $("authOverlay").classList.add
 async function loadAuth(){try{authenticatedUser=(await apiRequest('/api/auth/me')).user;}catch{authenticatedUser=null;}}
 $("closeAuth")?.addEventListener("click",closeAuth); $("authOverlay")?.addEventListener("click",closeAuth);
 $("authMode")?.addEventListener("click",()=>{authMode=authMode==="login"?"register":"login";$("authTitle").textContent=authMode==="login"?"🔐 تسجيل الدخول":"📝 إنشاء حساب";$("authName").hidden=authMode==="login";$("authSubmit").textContent=authMode==="login"?"تسجيل الدخول":"إنشاء الحساب";$("authMode").textContent=authMode==="login"?"إنشاء حساب جديد":"لدي حساب بالفعل";$("authMessage").textContent="";});
+$("closeOtp")?.addEventListener("click",()=>{ $("otpModal").hidden=true; $("otpOverlay").classList.add("hidden"); $("checkoutModal").hidden=false; });
+$("otpOverlay")?.addEventListener("click",()=>{ $("otpModal").hidden=true; $("otpOverlay").classList.add("hidden"); });
+$("resendOtp")?.addEventListener("click",async()=>{try{const r=await apiRequest("/api/otp/request",{method:"POST",body:JSON.stringify({phone:otpState.phone})});otpState.challengeId=r.challengeId;$("otpMessage").textContent=r.devCode?`وضع التطوير: رمز التحقق ${r.devCode}`:"تم إرسال رمز جديد";}catch(err){$("otpMessage").textContent=err.message;}});
+$("otpForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const r=await apiRequest("/api/otp/verify",{method:"POST",body:JSON.stringify({challengeId:otpState.challengeId,phone:otpState.phone,code:$("otpCode").value.trim()})});$("otpModal").hidden=true;$("otpOverlay").classList.add("hidden");await sendOrder(otpState.name,otpState.phone,otpState.address,otpState.couponCode,r.verificationToken);}catch(err){$("otpMessage").textContent=err.message;}});
 $("authForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const payload={email:$("authEmail").value.trim(),password:$("authPassword").value};if(authMode==="register")payload.name=$("authName").value.trim();const result=await apiRequest(authMode==="login"?'/api/auth/login':'/api/auth/register',{method:'POST',body:JSON.stringify(payload)});authenticatedUser=result.user;toast('تم تسجيل الدخول بنجاح');closeAuth();}catch(err){$("authMessage").textContent=err.message;}});
 $("authLogout")?.addEventListener("click",async()=>{try{await apiRequest('/api/auth/logout',{method:'POST'});authenticatedUser=null;toast('تم تسجيل الخروج');closeAuth();}catch(err){toast(err.message);}});
 const originalHandleSetting=handleSetting;
