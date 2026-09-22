@@ -250,9 +250,14 @@ async function openCustomerTracking(orderId){
 document.addEventListener('click',e=>{const t=e.target.closest('[data-track-order]');if(t)openCustomerTracking(t.dataset.trackOrder);});
 function closeAdminOrderDetails(){const m=$("adminOrderDetailsModal");if(m)m.hidden=true;adminOrderDetailsId=null;document.body.classList.remove("modal-open");}
 async function apiRequest(url, options={}){
-  const response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
+  let response;
+  try {
+    response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
+  } catch (e) {
+    throw new Error("الخادم غير متصل. يجب نشر نسخة المتجر على خادم Node.js وليس GitHub Pages فقط.");
+  }
   const data = await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(data.error || "حدث خطأ في الاتصال بالخادم");
+  if(!response.ok) throw new Error(data.error || `تعذر تنفيذ الطلب (${response.status})`);
   return data;
 }
 let adminShipping={zones:[],freeShippingThreshold:1000};

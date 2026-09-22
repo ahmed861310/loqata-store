@@ -1,6 +1,6 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.12.0",
+  "version": "5.12.1",
   "private": true,
   "description": "Backend starter for Loqata Store using Node.js built-in modules",
   "scripts": {

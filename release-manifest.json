@@ -1,5 +1,5 @@
 {
-  "version": "5.12.0",
+  "version": "5.12.1",
   "purpose": "production deployment preflight gate after Paymob mock validation",
   "source": "loqata-v5.10.0-paymob-test-ready.zip",
   "manual_production_payment_test_required": true,
