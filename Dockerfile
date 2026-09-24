@@ -1,18 +1,13 @@
 FROM node:20-alpine
-
 WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --omit=dev
-
+COPY package.json ./
 COPY . .
-
-USER root
-RUN mkdir -p /var/data && chown -R node:node /var/data
-
-USER node
-
 ENV NODE_ENV=production
+ENV PORT=3000
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Railway persistent data directory must be writable by the non-root runtime user.
+RUN mkdir -p /app/data && chown -R node:node /app
+
+USER node
+CMD ["node", "server.js"]
