@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.18.0",
-  "focus": "final audit + checkout hardening",
+  "version": "5.18.1",
+  "focus": "admin account creation fix",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,

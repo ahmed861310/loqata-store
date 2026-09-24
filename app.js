@@ -150,7 +150,7 @@ async function openAdmin(){
     const me=await apiRequest('/api/auth/me');
     if(me.user?.role==='admin'){adminUser=me.user;adminUnlocked=true;renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");return;}
   }catch{}
-  $("adminEmail").value="";$("adminPassword").value="";$("adminLoginMessage").textContent="";$("adminLoginModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");
+  $("adminEmail").value="";$("adminPassword").value="";$("adminLoginMessage").textContent="";try{const status=await apiRequest('/api/admin/bootstrap/status');if(status.exists){$("adminBootstrapBtn").disabled=true;$("adminBootstrapBtn").title="تم إنشاء حساب المدير بالفعل؛ استخدم تسجيل الدخول.";$("adminLoginMessage").textContent=`حساب المدير موجود بالفعل${status.email?` (${status.email})`:''}. استخدم بيانات تسجيل الدخول.`;}else{$("adminBootstrapBtn").disabled=false;$("adminBootstrapBtn").title="";}}catch{}$("adminLoginModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}

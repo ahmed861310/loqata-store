@@ -103,10 +103,23 @@ async function api(req,res,url){
   if(req.method==='GET' && url==='/api/auth/me'){
     const u=currentUser(req); return json(res,200,{user:u?publicUser(u):null});
   }
+  if(url==='/api/admin/bootstrap/status' && req.method==='GET'){
+    const db=readDb();
+    const admin=Array.isArray(db.users)?db.users.find(u=>u.role==='admin'):null;
+    return json(res,200,{exists:!!admin,email:admin?.email||null});
+  }
   if(url==='/api/admin/bootstrap' && req.method==='POST'){
-    const db=readDb(); if(db.users.some(u=>u.role==='admin'))return json(res,409,{error:'تم إنشاء المدير بالفعل'});
-    const b=await body(req); if(!b.email||!b.password||b.password.length<10)return json(res,400,{error:'أدخل بريد المدير وكلمة مرور من 10 أحرف على الأقل'});
-    const h=hash(b.password); const u={id:id('usr'),name:b.name||'مدير لقطة',email:b.email.trim().toLowerCase(),role:'admin',salt:h.salt,passwordHash:h.hash,createdAt:new Date().toISOString()}; db.users.push(u);writeDb(db);return login(res,u);
+    const db=readDb();
+    db.users=Array.isArray(db.users)?db.users:[];
+    const existingAdmin=db.users.find(u=>u.role==='admin');
+    if(existingAdmin)return json(res,409,{error:'تم إنشاء حساب المدير بالفعل. استخدم بريد المدير وكلمة المرور من شاشة دخول الإدارة.',code:'ADMIN_EXISTS',email:existingAdmin.email||null});
+    const b=await body(req);
+    const email=String(b.email||'').trim().toLowerCase();
+    const password=String(b.password||'');
+    const name=String(b.name||'مدير لقطة').trim()||'مدير لقطة';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return json(res,400,{error:'أدخل بريدًا إلكترونيًا صحيحًا',code:'INVALID_ADMIN_EMAIL'});
+    if(password.length<10)return json(res,400,{error:'كلمة مرور المدير يجب أن تكون 10 أحرف على الأقل',code:'INVALID_ADMIN_PASSWORD'});
+    const h=hash(password); const u={id:id('usr'),name,email,role:'admin',salt:h.salt,passwordHash:h.hash,createdAt:new Date().toISOString()}; db.users.push(u);writeDb(db);return login(res,u);
   }
   if(req.method==='GET' && url==='/api/loyalty'){const u=currentUser(req);if(!u)return json(res,401,{error:'يجب تسجيل الدخول'});const db=readDb();return json(res,200,{points:loyaltyBalance(db,u.id),config:db.loyalty.config});}
   if(url.startsWith('/api/admin/') && (!currentUser(req)||currentUser(req).role!=='admin')) return json(res,403,{error:'يجب تسجيل دخول المدير'});
