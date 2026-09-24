@@ -269,9 +269,16 @@ function apiUrl(path){
 async function apiRequest(url, options={}){
   const target=apiUrl(url);
   const isCrossOrigin=target.startsWith("http") && new URL(target,window.location.href).origin!==window.location.origin;
+  const method=String(options.method||"GET").toUpperCase();
+  const headers={...(options.headers||{})};
+  // Do not attach application/json to plain GET requests. That header forces a CORS
+  // preflight in browsers and can prevent public catalogue data from loading.
+  if(method!=="GET" && method!=="HEAD" && options.body!=null && !headers["Content-Type"] && !headers["content-type"]) {
+    headers["Content-Type"]="application/json";
+  }
   let response;
   try {
-    response = await fetch(target, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:isCrossOrigin?"include":"same-origin", ...options});
+    response = await fetch(target, {...options, method, headers, credentials:isCrossOrigin?"include":"same-origin", cache:method==="GET"?"no-store":options.cache});
   } catch (err) {
     if (isCrossOrigin) throw new Error("تعذر الوصول إلى خادم لقطة. تأكد أن Railway يعمل وأن Public Domain صحيح ثم راجع FRONTEND_ORIGIN.");
     throw new Error("تعذر الاتصال بخادم متجر لقطة. شغّل server.js أو افتح المتجر من رابط الخادم.");
@@ -314,11 +321,10 @@ loadAuth();
 (async function syncProductsFromServer(){
   try{
     const remote=await apiRequest("/api/products");
-    if(Array.isArray(remote)){
-      products=remote;
-      saveProducts();
-      renderProducts();
-    }
+    if(!Array.isArray(remote)) throw new Error("استجابة المنتجات غير صالحة");
+    products=remote;
+    saveProducts();
+    renderProducts();
     loadRecommendations();
   }catch(err){
     console.warn("تعذر الاتصال بقاعدة البيانات",err.message);
