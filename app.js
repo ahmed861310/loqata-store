@@ -16,7 +16,7 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"
 const imageMarkup = (p, cls="product-img") => p.image ? `<img class="${cls}-photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : "";
 const visualMarkup = (p, cls="product-img") => `<div class="${cls}">${imageMarkup(p, cls)}<span class="${cls}-fallback" ${p.image ? 'style="display:none"' : ''}>${escapeHtml(p.emoji || "🛍️")}</span></div>`;
 function readJson(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } }
-let products = readJson("loqataProducts", defaultProducts); if (!Array.isArray(products) || !products.length) products = defaultProducts;
+let products = defaultProducts.map(p=>({...p})); try { localStorage.setItem("loqataProducts",JSON.stringify(products)); } catch {}
 let cart = readJson("loqataCart", []); if (!Array.isArray(cart)) cart = [];
 let orders = readJson("loqataOrders", []); if (!Array.isArray(orders)) orders = [];
 let favorites = readJson("loqataFavorites", []); if (!Array.isArray(favorites)) favorites = [];
@@ -69,7 +69,7 @@ async function loadRecommendations(){
     const items=data.items||[];
     const hint=$("recommendationHint"); if(hint)hint.textContent=data.personalized?`مبنية على ${data.basedOn||'نشاطك'}`:'اختيارات مقترحة لك';
     box.innerHTML=items.length?items.map(p=>`<article class="recommendation-card">${visualMarkup(p,'recommendation-img')}<div class="recommendation-body"><h3>${escapeHtml(p.name)}</h3>${priceMarkup(p)}<div class="rating-inline"><span class="stars">${ratingStars(p.ratingAverage)}</span><small>${p.ratingCount||0} تقييم</small></div>${isOnOffer(p)?'<span class="smart-offer-badge">⚡ عرض خاص</span>':''}<div class="recommendation-actions"><button class="secondary-btn small-btn" data-details="${p.id}" type="button">التفاصيل</button><button class="add-btn small-btn" data-add="${p.id}" type="button">أضف للسلة</button></div></div></article>`).join(''):'<p class="empty">سنضيف لك مقترحات جديدة قريبًا.</p>';
-  }catch(e){box.innerHTML='<p class="empty">تعذر تحميل المقترحات الآن.</p>';}
+  }catch(e){const items=products.slice(0,4); box.innerHTML=items.map(p=>`<article class="recommendation-card">${visualMarkup(p,'recommendation-img')}<div class="recommendation-body"><h3>${escapeHtml(p.name)}</h3>${priceMarkup(p)}<div class="recommendation-actions"><button class="secondary-btn small-btn" data-details="${p.id}" type="button">التفاصيل</button><button class="add-btn small-btn" data-add="${p.id}" type="button">أضف للسلة</button></div></div></article>`).join('');}
 }
 
 function renderProducts(){

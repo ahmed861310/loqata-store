@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لقطة | متجر إلكتروني — الإصدار 5.18.9</title>
+  <title>لقطة | متجر إلكتروني — الإصدار 5.19.0</title>
   <meta name="description" content="لقطة - متجر إلكتروني بسيط وسريع">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -46,7 +46,7 @@
 
     <section id="recommendationsSection" class="recommendations-section" aria-label="مقترحات لقطة">
       <div class="section-head"><h2>✨ مقترحات لقطة</h2><span id="recommendationHint"></span></div>
-      <div id="recommendations" class="recommendations-grid"><p class="empty">جارٍ تجهيز المقترحات...</p></div>
+      <div id="recommendations" class="recommendations-grid"><p class="empty">اختيارات مقترحة من منتجات لقطة</p></div>
     </section>
 
     <section class="categories" aria-label="الأقسام">
@@ -62,7 +62,14 @@
         <h2>المنتجات</h2>
         <span id="resultCount"></span>
       </div>
-      <div id="products" class="products"></div>
+      <div id="products" class="products"><article class="card"><div class="product-img"><span class="product-img-fallback">🎧</span></div><div class="card-body"><h3>سماعة بلوتوث</h3><div class="price">450 ج.م</div><div class="stock-line">متاح: 20 قطعة</div><button class="add-btn" data-add="1" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">⌚</span></div><div class="card-body"><h3>ساعة ذكية</h3><div class="price">850 ج.م</div><div class="stock-line">متاح: 12 قطعة</div><button class="add-btn" data-add="2" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">👕</span></div><div class="card-body"><h3>تيشيرت كاجوال</h3><div class="price">320 ج.م</div><div class="stock-line">متاح: 25 قطعة</div><button class="add-btn" data-add="3" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">🎒</span></div><div class="card-body"><h3>شنطة ظهر</h3><div class="price">390 ج.م</div><div class="stock-line">متاح: 15 قطعة</div><button class="add-btn" data-add="4" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">☕</span></div><div class="card-body"><h3>كوب حراري</h3><div class="price">220 ج.م</div><div class="stock-line">متاح: 18 قطعة</div><button class="add-btn" data-add="5" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">💡</span></div><div class="card-body"><h3>مصباح مكتب</h3><div class="price">280 ج.م</div><div class="stock-line">متاح: 10 قطع</div><button class="add-btn" data-add="6" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">🔌</span></div><div class="card-body"><h3>شاحن سريع</h3><div class="price">250 ج.م</div><div class="stock-line">متاح: 30 قطعة</div><button class="add-btn" data-add="7" type="button">أضف للسلة</button></div></article>
+<article class="card"><div class="product-img"><span class="product-img-fallback">📱</span></div><div class="card-body"><h3>حافظة هاتف</h3><div class="price">150 ج.م</div><div class="stock-line">متاح: 22 قطعة</div><button class="add-btn" data-add="8" type="button">أضف للسلة</button></div></article></div>
       <div id="emptyState" class="empty hidden">لا توجد منتجات مطابقة للبحث.</div>
     </section>
   </main>
@@ -192,9 +199,9 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>© 2026 لقطة — الإصدار 5.18.9 — جميع الحقوق محفوظة</footer>
-  <script src="api-config.js?v=5.18.9"></script>
-  <script src="app.js?v=5.18.9"></script>
+  <footer>© 2026 لقطة — الإصدار 5.19.0 — جميع الحقوق محفوظة</footer>
+  <script src="api-config.js?v=5.19.0"></script>
+  <script src="app.js?v=5.19.0"></script>
 
   <div id="paymentDemoOverlay" class="overlay hidden"></div>
   <section id="paymentDemoModal" class="checkout-modal" role="dialog" aria-modal="true" hidden>
