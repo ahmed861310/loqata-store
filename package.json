@@ -1,11 +1,12 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.14.0",
+  "version": "5.16.0",
   "private": true,
-  "description": "Loqata Store backend — payment safety and checkout hardening",
+  "description": "Loqata Store backend — checkout hardening, secure admin auth, and end-to-end checkout validation",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",
-    "preflight:production": "node scripts/production-preflight.js"
+    "preflight:production": "node scripts/production-preflight.js",
+    "test:e2e": "node scripts/store-e2e.js"
   }
 }

@@ -1,7 +1,15 @@
 {
-  "version": "5.15.0",
+  "version": "5.16.0",
   "name": "Loqata Store",
   "focus": "secure-admin-authentication",
   "paymobMode": "test",
-  "liveCredentialsIncluded": false
+  "liveCredentialsIncluded": false,
+  "title": "Checkout & Order Flow Validation",
+  "status": "validated",
+  "changes": [
+    "End-to-end checkout/order flow test added",
+    "Failed card payments restore reserved stock exactly once",
+    "Production sessions add Secure cookie flag",
+    "Database file can be overridden with LOQATA_DB_FILE for isolated testing"
+  ]
 }
