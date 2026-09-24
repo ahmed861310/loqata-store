@@ -1,4 +1,3 @@
-
 FROM node:20-alpine
 
 WORKDIR /app
@@ -9,7 +8,7 @@ RUN npm install --omit=dev
 COPY . .
 
 USER root
-RUN mkdir -p /app/data && chown -R node:node /app/data
+RUN mkdir -p /var/data && chown -R node:node /var/data
 
 USER node
 
