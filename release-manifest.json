@@ -1,14 +1,7 @@
 {
-  "version": "5.14.0",
-  "purpose": "checkout and payment safety hardening while Paymob remains in TEST mode",
-  "source": "loqata-v5.13.0-production-handoff.zip",
-  "paymob_mode": "test",
-  "changes": [
-    "server-authoritative payment amount",
-    "authenticated card checkout",
-    "stock rollback on payment-intent failure",
-    "guest COD with OTP preserved"
-  ],
-  "production_credentials_included": false,
-  "manual_production_payment_test_required": true
+  "version": "5.15.0",
+  "name": "Loqata Store",
+  "focus": "secure-admin-authentication",
+  "paymobMode": "test",
+  "liveCredentialsIncluded": false
 }
