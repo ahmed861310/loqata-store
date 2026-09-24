@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.18.1",
+  "version": "5.18.2",
   "private": true,
-  "description": "Loqata Store backend — admin bootstrap fix, hardened checkout validation, mobile UX, secure admin auth, and end-to-end validation",
+  "description": "Loqata Store backend — final audit, GitHub Pages/backend connection fix, hardened checkout validation, mobile UX, secure admin auth, and end-to-end validation",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",

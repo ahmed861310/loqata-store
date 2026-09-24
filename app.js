@@ -150,7 +150,7 @@ async function openAdmin(){
     const me=await apiRequest('/api/auth/me');
     if(me.user?.role==='admin'){adminUser=me.user;adminUnlocked=true;renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");return;}
   }catch{}
-  $("adminEmail").value="";$("adminPassword").value="";$("adminLoginMessage").textContent="";try{const status=await apiRequest('/api/admin/bootstrap/status');if(status.exists){$("adminBootstrapBtn").disabled=true;$("adminBootstrapBtn").title="تم إنشاء حساب المدير بالفعل؛ استخدم تسجيل الدخول.";$("adminLoginMessage").textContent=`حساب المدير موجود بالفعل${status.email?` (${status.email})`:''}. استخدم بيانات تسجيل الدخول.`;}else{$("adminBootstrapBtn").disabled=false;$("adminBootstrapBtn").title="";}}catch{}$("adminLoginModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");
+  $("adminEmail").value="";$("adminPassword").value="";$("adminLoginMessage").textContent="";$("adminBootstrapBtn").dataset.mode="login";$("adminLoginTitle").textContent="🔐 دخول الإدارة";$("adminLoginForm")?.querySelector("button[type=submit]") && ($("adminLoginForm").querySelector("button[type=submit]").textContent="دخول الإدارة");$("adminBootstrapBtn").textContent="إنشاء حساب المدير لأول مرة";$("adminLoginModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
@@ -179,8 +179,16 @@ $("shippingZone")?.addEventListener("change",()=>updateCheckoutSummary());
 $("applyCouponBtn")?.addEventListener("click",async()=>{const code=$("couponCode").value.trim().toUpperCase();if(!code){selectedCoupon=null;$("couponMessage").textContent="";updateCheckoutSummary();return;}try{selectedCoupon=await apiRequest("/api/coupons/validate",{method:"POST",body:JSON.stringify({code,subtotal:checkoutSubtotal()})});$("couponMessage").textContent=`تم تطبيق ${selectedCoupon.label||"الخصم"}: -${money(selectedCoupon.discount)}`;updateCheckoutSummary();}catch(err){selectedCoupon=null;$("couponMessage").textContent=err.message;updateCheckoutSummary();}});
 $("closeAdmin").addEventListener("click",closeAdmin);$("adminOverlay").addEventListener("click",()=>{closeAdmin();closeAdminLogin();});
 $("closeAdminLogin")?.addEventListener("click",closeAdminLogin);
-$("adminLoginForm")?.addEventListener("submit",async e=>{e.preventDefault();const msg=$("adminLoginMessage");msg.textContent="جارٍ التحقق...";try{const result=await apiRequest('/api/auth/login',{method:'POST',body:JSON.stringify({email:$("adminEmail").value.trim(),password:$("adminPassword").value})});if(result.user?.role!=='admin')throw new Error('هذا الحساب ليس حساب مدير');adminUser=result.user;adminUnlocked=true;closeAdminLogin();renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");toast("تم تسجيل دخول الإدارة");}catch(err){msg.textContent=err.message||'تعذر تسجيل الدخول';}});
-$("adminBootstrapBtn")?.addEventListener("click",async()=>{const email=$("adminEmail").value.trim(),password=$("adminPassword").value;const msg=$("adminLoginMessage");if(!email||password.length<10){msg.textContent='لإنشاء المدير: أدخل بريدًا صحيحًا وكلمة مرور من 10 أحرف على الأقل.';return;}msg.textContent='جارٍ إنشاء حساب المدير...';try{const result=await apiRequest('/api/admin/bootstrap',{method:'POST',body:JSON.stringify({name:'مدير لقطة',email,password})});adminUser=result.user;adminUnlocked=true;closeAdminLogin();renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");toast('تم إنشاء حساب المدير وتسجيل الدخول');}catch(err){msg.textContent=err.message||'تعذر إنشاء حساب المدير';}});
+$("adminLoginForm")?.addEventListener("submit",async e=>{e.preventDefault();const msg=$("adminLoginMessage"),creating=$("adminBootstrapBtn")?.dataset.mode==="create";msg.textContent=creating?"جارٍ إنشاء حساب المدير...":"جارٍ التحقق...";try{const result=await apiRequest(creating?"/api/admin/bootstrap":"/api/auth/login",{method:"POST",body:JSON.stringify({name:"مدير لقطة",email:$("adminEmail").value.trim(),password:$("adminPassword").value})});if(!creating&&result.user?.role!=="admin")throw new Error("هذا الحساب ليس حساب مدير");adminUser=result.user;adminUnlocked=true;closeAdminLogin();renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");toast(creating?"تم إنشاء حساب المدير وتسجيل الدخول":"تم تسجيل دخول الإدارة");}catch(err){msg.textContent=err.message|| (creating?"تعذر إنشاء حساب المدير":"تعذر تسجيل الدخول");}});
+$("adminBootstrapBtn")?.addEventListener("click",()=>{
+  const title=$("adminLoginTitle"), submit=$("adminLoginForm")?.querySelector("button[type=submit]"), btn=$("adminBootstrapBtn"), msg=$("adminLoginMessage");
+  const creating=btn.dataset.mode!=="create";
+  btn.dataset.mode=creating?"create":"login";
+  title.textContent=creating?"🛡️ إنشاء حساب المدير":"🔐 دخول الإدارة";
+  submit.textContent=creating?"إنشاء حساب المدير":"دخول الإدارة";
+  btn.textContent=creating?"العودة إلى تسجيل دخول الإدارة":"إنشاء حساب المدير لأول مرة";
+  msg.textContent=creating?"أدخل بريد المدير وكلمة مرور لا تقل عن 10 أحرف ثم اضغط إنشاء الحساب.":"";
+});
 
 $("addProductForm").addEventListener("submit",e=>{e.preventDefault();const name=$("newProductName").value.trim(),price=Number($("newProductPrice").value),stock=Number($("newProductStock").value),category=$("newProductCategory").value,emoji=$("newProductEmoji").value.trim()||"🛍️",image=$("newProductImage").value.trim(),description=$("newProductDescription").value.trim()||"منتج جديد من متجر لقطة.";if(!name||!Number.isFinite(price)||price<0||!Number.isFinite(stock)||stock<0)return toast('تحقق من بيانات المنتج');apiRequest('/api/admin/products',{method:'POST',body:JSON.stringify({name,price,stock,category,emoji,image,description})}).then(saved=>{products.push(saved);saveProducts();renderProducts();renderAdmin();e.target.reset();toast('تمت إضافة المنتج إلى قاعدة البيانات');}).catch(err=>toast(err.message));});
 $("csvExportBtn")?.addEventListener("click",exportOrdersCSV);$("clearOrdersBtn").addEventListener('click',()=>{const before=orders.length;orders=orders.filter(o=>o.status!=='مكتمل');saveOrders();renderAdmin();toast(before===orders.length?'لا توجد طلبات مكتملة':'تم حذف الطلبات المكتملة');});
@@ -253,8 +261,21 @@ async function openCustomerTracking(orderId){
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-track-order]');if(t)openCustomerTracking(t.dataset.trackOrder);});
 function closeAdminOrderDetails(){const m=$("adminOrderDetailsModal");if(m)m.hidden=true;adminOrderDetailsId=null;document.body.classList.remove("modal-open");}
+function apiUrl(path){
+  const base=String(window.LOQATA_CONFIG?.API_BASE_URL||"").trim().replace(/\/$/,"");
+  if(!base) return path;
+  return `${base}${path.startsWith("/")?path:`/${path}`}`;
+}
 async function apiRequest(url, options={}){
-  const response = await fetch(url, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:"same-origin", ...options});
+  const target=apiUrl(url);
+  const isCrossOrigin=target.startsWith("http") && new URL(target,window.location.href).origin!==window.location.origin;
+  let response;
+  try {
+    response = await fetch(target, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:isCrossOrigin?"include":"same-origin", ...options});
+  } catch (err) {
+    if (isCrossOrigin) throw new Error("خادم متجر لقطة غير متصل. اضبط رابط الـ Backend في api-config.js ثم أعد نشر الموقع.");
+    throw new Error("تعذر الاتصال بخادم متجر لقطة. شغّل server.js أو افتح المتجر من رابط الخادم.");
+  }
   const data = await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.error || "حدث خطأ في الاتصال بالخادم");
   return data;
