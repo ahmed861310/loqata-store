@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.19.0",
+  "version": "5.19.3",
   "private": true,
-  "description": "Loqata Store v5.19.0 — Railway healthcheck fix",
+  "description": "Loqata Store v5.19.3 — cart core verified fix",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",

@@ -54,6 +54,8 @@ function renderAccount(){$("accountName").value=customer.name||"";$("accountPhon
 function openAccount(){renderAccount();loadNotifications();$("accountModal").hidden=false;$("accountOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
 function closeAccount(){$("accountModal").hidden=true;$("accountOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 const categoryNames = {electronics:"إلكترونيات",fashion:"ملابس",home:"المنزل"};
+function cartCount(){return cart.reduce((sum,item)=>sum+Math.max(0,Number(item.qty)||0),0);}
+function cartTotal(){return cart.reduce((sum,item)=>sum+(Math.max(0,Number(item.qty)||0)*Math.max(0,Number(item.price)||0)),0);}
 function saveCart(){localStorage.setItem("loqataCart",JSON.stringify(cart));}
 function saveProducts(){localStorage.setItem("loqataProducts",JSON.stringify(products));}
 function saveOrders(){localStorage.setItem("loqataOrders",JSON.stringify(orders));}
@@ -61,6 +63,7 @@ function saveFavorites(){localStorage.setItem("loqataFavorites",JSON.stringify(f
 async function toggleFavorite(id){const adding=!favorites.includes(id);favorites=adding?[...favorites,id]:favorites.filter(x=>x!==id);saveFavorites();renderProducts();loadRecommendations();if(authenticatedUser){try{await apiRequest("/api/wishlist/toggle",{method:"POST",body:JSON.stringify({productId:id})});toast(adding?"تمت المتابعة — سنبلغك عند انخفاض السعر أو عودة المخزون":"تم إلغاء متابعة المنتج");}catch(e){toast(e.message);}}else toast(adding?"أضيف للمفضلة":"أزيل من المفضلة");}
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove("show"),1800);}
 function effectiveProductPriceForFilter(p){const now=Date.now();const sale=Number(p.salePrice);return Number.isFinite(sale)&&sale>0&&sale<Number(p.price||0)&&(!p.offerEndsAt||new Date(p.offerEndsAt).getTime()>now)?sale:Number(p.price||0);}
+function effectivePrice(p){return effectiveProductPriceForFilter(p);}
 function isOnOffer(p){return effectiveProductPriceForFilter(p)<Number(p.price||0);}
 async function loadRecommendations(){
   const box=$("recommendations"); if(!box)return;
