@@ -311,7 +311,22 @@ handleSetting=function(action){if(action==="account"){showAuth();return;}return 
 loadAuth();
 
 // v2.5: تحميل المنتجات من قاعدة البيانات عند تشغيل المتجر
-(async function syncProductsFromServer(){try{const remote=await apiRequest("/api/products");if(Array.isArray(remote)&&remote.length){products=remote;saveProducts();renderProducts();}loadRecommendations();}catch(err){console.warn("تعذر الاتصال بقاعدة البيانات",err.message);loadRecommendations();}})();
+(async function syncProductsFromServer(){
+  try{
+    const remote=await apiRequest("/api/products");
+    if(Array.isArray(remote)){
+      products=remote;
+      saveProducts();
+      renderProducts();
+    }
+    loadRecommendations();
+  }catch(err){
+    console.warn("تعذر الاتصال بقاعدة البيانات",err.message);
+    if(!Array.isArray(products)||!products.length) products=defaultProducts;
+    renderProducts();
+    loadRecommendations();
+  }
+})();
 
 // v2.8.0: صفحة حساب العميل المرتبطة بقاعدة البيانات
 async function openCustomerAccount(){
