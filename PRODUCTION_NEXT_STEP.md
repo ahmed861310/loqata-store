@@ -19,3 +19,10 @@
    - order status update
 6. Disable test mode and remove debug logs.
 7. Confirm admin access protection and backup policy.
+
+
+## v5.14.0 hardening
+- Checkout amount is now server-authoritative.
+- Card payment intent requires an authenticated customer and a card order owned by that customer.
+- Failed payment-intent creation restores reserved stock and marks the order cancelled.
+- Guest customers continue to use COD with OTP verification.

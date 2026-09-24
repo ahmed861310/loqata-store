@@ -299,3 +299,11 @@ npm run preflight:production
 ## Paymob TEST
 
 Set `PAYMENT_PROVIDER=paymob`, then configure `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_INTEGRATION_ID`, `PAYMOB_HMAC_SECRET`, `PAYMOB_NOTIFICATION_URL=https://YOUR_DOMAIN/api/payments/webhook`, and `PAYMOB_REDIRECT_URL=https://YOUR_DOMAIN/payment-result` in the hosting environment. Never commit these secrets.
+
+
+## v5.14.0 — تقوية دورة الدفع والطلب
+- منع الاعتماد على المبلغ المرسل من المتصفح عند إنشاء Payment Intent؛ الخادم يستخدم إجمالي الطلب المحسوب من قاعدة البيانات.
+- منع إنشاء Payment Intent لطلب COD أو لطلب لا يخص الحساب المسجل.
+- منع إعادة بدء الدفع لطلب تم دفعه بالفعل.
+- عند فشل بدء الدفع الإلكتروني، تتم إعادة المخزون وإلغاء الطلب بدل ترك مخزون محجوز بلا عملية دفع.
+- تحسين واجهة العميل لمنع بدء الدفع الإلكتروني من جلسة ضيف، مع توجيهه لتسجيل الدخول أولًا.

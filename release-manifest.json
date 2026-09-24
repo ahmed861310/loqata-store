@@ -1,13 +1,14 @@
 {
-  "version": "5.12.3",
-  "purpose": "production deployment preflight gate after Paymob mock validation",
-  "source": "loqata-v5.10.0-paymob-test-ready.zip",
-  "manual_production_payment_test_required": true,
-  "e2e_test": "PASS",
-  "manual_paymob_test_required": true,
-  "production_readiness_endpoint": "/api/production-readiness",
-  "automated_paymob_mock_test": "PASS",
-  "paymob_test_command": "npm run test:paymob",
-  "production_preflight_command": "npm run preflight:production",
-  "production_preflight": "PASS_CODE_VALIDATED"
+  "version": "5.14.0",
+  "purpose": "checkout and payment safety hardening while Paymob remains in TEST mode",
+  "source": "loqata-v5.13.0-production-handoff.zip",
+  "paymob_mode": "test",
+  "changes": [
+    "server-authoritative payment amount",
+    "authenticated card checkout",
+    "stock rollback on payment-intent failure",
+    "guest COD with OTP preserved"
+  ],
+  "production_credentials_included": false,
+  "manual_production_payment_test_required": true
 }
