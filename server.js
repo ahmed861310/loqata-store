@@ -4,7 +4,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { createPaymentService } = require('./payment-service');
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = '0.0.0.0';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_ORIGINS = String(process.env.FRONTEND_ORIGIN || '')
   .split(',').map(x => x.trim()).filter(Boolean).map(value => {
@@ -384,7 +385,7 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
 function publicUser(u){return {id:u.id,name:u.name,email:u.email,role:u.role,createdAt:u.createdAt};}
 function login(res,u){const sid=crypto.randomBytes(32).toString('hex');sessions.set(sid,{userId:u.id,createdAt:Date.now()});const crossOrigin=Boolean(FRONTEND_ORIGIN);res.setHeader('Set-Cookie',`loqata_session=${sid}; HttpOnly; Path=/; SameSite=${crossOrigin?'None':'Lax'}${crossOrigin||NODE_ENV==='production'?'; Secure':''}`);return json(res,200,{user:publicUser(u)});}
 
-const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");if(FRONTEND_ORIGINS.length){const requestOrigin=String(req.headers.origin||'').replace(/\/$/,'');const allowedOrigin=FRONTEND_ORIGINS.includes(requestOrigin)?requestOrigin:'';if(allowedOrigin)res.setHeader('Access-Control-Allow-Origin',allowedOrigin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Access-Control-Allow-Headers','Content-Type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,PUT,DELETE,OPTIONS');if(req.method==='OPTIONS'){if(!allowedOrigin){res.writeHead(403);return res.end();}res.writeHead(204);return res.end();}}const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});
+const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");if(FRONTEND_ORIGINS.length){const requestOrigin=String(req.headers.origin||'').replace(/\/$/,'');const allowedOrigin=FRONTEND_ORIGINS.includes(requestOrigin)?requestOrigin:'';if(allowedOrigin)res.setHeader('Access-Control-Allow-Origin',allowedOrigin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Access-Control-Allow-Headers','Content-Type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,PUT,DELETE,OPTIONS');if(req.method==='OPTIONS'){if(!allowedOrigin){res.writeHead(403);return res.end();}res.writeHead(204);return res.end();}}const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/health' || url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});
 if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
   const isProd=NODE_ENV==='production';
   const checks={
@@ -402,5 +403,8 @@ if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
   return json(res,200,{ok:missing.length===0,environment:NODE_ENV,provider:paymentService.provider,checks,missing});
 }
 if(url.pathname.startsWith('/api/'))return await api(req,res,url.pathname);let file=url.pathname==='/'?'/index.html':url.pathname;const full=path.normalize(path.join(ROOT,file));if(!full.startsWith(ROOT)||!fs.existsSync(full)||fs.statSync(full).isDirectory())return json(res,404,{error:'Not found'});const ext=path.extname(full);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream'});fs.createReadStream(full).pipe(res);}catch(e){console.error(e);json(res,500,{error:'Server error'});}});
-if (require.main === module) server.listen(PORT,()=>console.log(`لقطة يعمل على http://localhost:${PORT}`));
+if (require.main === module) {
+  server.listen(PORT, HOST, () => console.log(`Loqata backend listening on ${HOST}:${PORT}`));
+  server.on('error', err => { console.error('Server listen error:', err); process.exit(1); });
+}
 module.exports = server;

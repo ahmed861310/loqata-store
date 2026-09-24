@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.18.7",
+  "version": "5.18.8",
   "private": true,
-  "description": "Loqata Store v5.18.7 — frontend connected to Railway production API",
+  "description": "Loqata Store v5.18.8 — Railway healthcheck fix",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",
