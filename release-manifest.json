@@ -1,11 +1,15 @@
 {
   "name": "Loqata Store",
   "version": "5.18.2",
-  "focus": "GitHub Pages + backend connection and admin bootstrap UX fix",
+  "focus": "GitHub Pages + Node.js backend connection",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
   "e2e_status": "PASS",
   "syntax_check": "PASS",
-  "admin_bootstrap_local": "PASS"
+  "admin_bootstrap_local": "PASS",
+  "backend_ready": true,
+  "cors_origin": "https://ahmed861310.github.io",
+  "persistent_db_path": "/var/data/db.json",
+  "deployment_blueprint": "render.yaml"
 }

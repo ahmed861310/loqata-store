@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: loqata-backend
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    numInstances: 1
+    disk:
+      name: loqata-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGIN
+        value: https://ahmed861310.github.io
+      - key: LOQATA_DB_FILE
+        value: /var/data/db.json
+      - key: PAYMENT_PROVIDER
+        value: paymob
+      - key: PAYMENT_CURRENCY
+        value: EGP
+      - key: PAYMOB_BASE_URL
+        value: https://accept.paymob.com
+      - key: PAYMOB_SECRET_KEY
+        sync: false
+      - key: PAYMOB_PUBLIC_KEY
+        sync: false
+      - key: PAYMOB_INTEGRATION_ID
+        sync: false
+      - key: PAYMOB_HMAC_SECRET
+        sync: false
+      - key: PAYMOB_NOTIFICATION_URL
+        sync: false
+      - key: PAYMOB_REDIRECT_URL
+        sync: false
+      - key: OTP_WEBHOOK_URL
+        sync: false
