@@ -1,12 +1,11 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.12.5",
+  "version": "5.12.4",
   "private": true,
   "description": "Backend starter for Loqata Store using Node.js built-in modules",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",
-    "preflight:production": "node scripts/production-preflight.js",
-    "production:preflight": "node scripts/production-preflight.js"
+    "preflight:production": "node scripts/production-preflight.js"
   }
 }
