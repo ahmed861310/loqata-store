@@ -97,18 +97,18 @@
       <button id="closeCheckout" class="icon-btn" type="button" aria-label="إغلاق">✕</button>
     </div>
     <form id="checkoutForm" class="checkout-form">
-      <p class="checkout-note">اكتب بياناتك لمراجعة الطلب قبل إرساله عبر واتساب.</p>
+      <p class="checkout-note checkout-intro">أكمل بياناتك، راجع الإجمالي، ثم اختر طريقة الدفع لتأكيد الطلب.</p>
       <label for="customerName">الاسم الكامل</label>
-      <input id="customerName" name="customerName" type="text" required minlength="2" placeholder="اكتب اسمك">
+      <input id="customerName" name="customerName" type="text" autocomplete="name" required minlength="2" placeholder="اكتب اسمك">
       <label for="customerPhone">رقم الهاتف</label>
-      <input id="customerPhone" name="customerPhone" type="tel" required pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
+      <input id="customerPhone" name="customerPhone" type="tel" inputmode="tel" autocomplete="tel" required pattern="[0-9٠-٩ +()-]{8,}" placeholder="01xxxxxxxxx">
       <label for="shippingZone">منطقة التوصيل</label>
       <select id="shippingZone" name="shippingZone" required></select>
-      <fieldset class="payment-methods"><legend>طريقة الدفع</legend><label><input type="radio" name="paymentMethod" value="cod" checked> 💵 الدفع عند الاستلام</label><p class="checkout-note">سيتم دفع قيمة الطلب كاملة عند استلامه.</p><label><input type="radio" name="paymentMethod" value="card"> 💳 الدفع الإلكتروني</label><p class="checkout-note">وضع اختبار فقط — لا يتم خصم أموال حقيقية.</p></fieldset>
+      <fieldset class="payment-methods"><legend>طريقة الدفع</legend><label class="payment-option"><input type="radio" name="paymentMethod" value="cod" checked><span><strong>💵 الدفع عند الاستلام</strong><small>سيتم دفع قيمة الطلب كاملة عند استلامه.</small></span></label><label class="payment-option"><input type="radio" name="paymentMethod" value="card"><span><strong>💳 الدفع الإلكتروني</strong><small>وضع اختبار حاليًا — لا يتم خصم أموال حقيقية.</small></span></label></fieldset>
       <label for="customerAddress">العنوان</label>
-      <textarea id="customerAddress" name="customerAddress" required minlength="5" rows="3" placeholder="المنطقة، الشارع، رقم العقار"></textarea>
-      <label for="couponCode">كود الخصم (اختياري)</label><input id="couponCode" name="couponCode" type="text" placeholder="أدخل كود الخصم"><button id="applyCouponBtn" type="button">تطبيق الكوبون</button><p id="couponMessage" class="checkout-note"></p><label for="redeemPoints">استخدم نقاط الولاء (اختياري)</label><input id="redeemPoints" type="number" min="0" step="1" value="0" placeholder="عدد النقاط"><p class="checkout-note">النقاط تُخصم من قيمة المنتجات قبل الشحن، ولا يمكن أن تتجاوز رصيدك.</p><div class="checkout-summary" id="checkoutSummary"></div>
-      <button class="primary-btn" type="submit">📲 تأكيد وإرسال الطلب</button>
+      <textarea id="customerAddress" name="customerAddress" autocomplete="street-address" required minlength="5" rows="3" placeholder="المنطقة، الشارع، رقم العقار"></textarea>
+      <label for="couponCode">كود الخصم (اختياري)</label><input id="couponCode" name="couponCode" type="text" autocomplete="off" placeholder="أدخل كود الخصم"><button id="applyCouponBtn" type="button">تطبيق الكوبون</button><p id="couponMessage" class="checkout-note"></p><label for="redeemPoints">استخدم نقاط الولاء (اختياري)</label><input id="redeemPoints" inputmode="numeric" type="number" min="0" step="1" value="0" placeholder="عدد النقاط"><p class="checkout-note">النقاط تُخصم من قيمة المنتجات قبل الشحن، ولا يمكن أن تتجاوز رصيدك.</p><div class="checkout-summary" id="checkoutSummary"></div>
+      <div class="checkout-submit-wrap"><button class="primary-btn checkout-submit" type="submit">📲 مراجعة وتأكيد الطلب</button><small>لن يتم اعتماد الطلب قبل إتمام خطوة التحقق المطلوبة.</small></div>
     </form>
   </section>
 
