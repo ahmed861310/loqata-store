@@ -1,9 +1,11 @@
 {
   "name": "Loqata Store",
-  "version": "5.17.0",
-  "focus": "mobile checkout UX",
+  "version": "5.18.0",
+  "focus": "final audit + checkout hardening",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
-  "e2e_status": "PASS"
+  "e2e_status": "PASS",
+  "paymob_mock_test": "PASS",
+  "syntax_check": "PASS"
 }
