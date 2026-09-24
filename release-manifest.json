@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.18.3",
-  "focus": "GitHub Pages + Node.js backend connection",
+  "version": "5.18.4",
+  "focus": "Frontend connected to Railway production API",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
@@ -11,5 +11,6 @@
   "backend_ready": true,
   "cors_origin": "https://ahmed861310.github.io",
   "persistent_db_path": "/var/data/db.json",
-  "deployment_blueprint": "render.yaml"
+  "deployment_blueprint": "render.yaml",
+  "frontend_api_base_url": "https://loqata-backend-production.up.railway.app"
 }
