@@ -6,7 +6,11 @@ const { createPaymentService } = require('./payment-service');
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const FRONTEND_ORIGIN = String(process.env.FRONTEND_ORIGIN || '').trim().replace(/\/$/, '');
+const FRONTEND_ORIGINS = String(process.env.FRONTEND_ORIGIN || '')
+  .split(',').map(x => x.trim()).filter(Boolean).map(value => {
+    try { return new URL(value).origin; } catch { return value.replace(/\/$/, ''); }
+  });
+const FRONTEND_ORIGIN = FRONTEND_ORIGINS[0] || '';
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, 'data');
 const DB_FILE = process.env.LOQATA_DB_FILE || path.join(DATA_DIR, 'db.json');
@@ -380,7 +384,7 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
 function publicUser(u){return {id:u.id,name:u.name,email:u.email,role:u.role,createdAt:u.createdAt};}
 function login(res,u){const sid=crypto.randomBytes(32).toString('hex');sessions.set(sid,{userId:u.id,createdAt:Date.now()});const crossOrigin=Boolean(FRONTEND_ORIGIN);res.setHeader('Set-Cookie',`loqata_session=${sid}; HttpOnly; Path=/; SameSite=${crossOrigin?'None':'Lax'}${crossOrigin||NODE_ENV==='production'?'; Secure':''}`);return json(res,200,{user:publicUser(u)});}
 
-const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");if(FRONTEND_ORIGIN){const requestOrigin=String(req.headers.origin||'').replace(/\/$/,'');if(requestOrigin===FRONTEND_ORIGIN)res.setHeader('Access-Control-Allow-Origin',FRONTEND_ORIGIN);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Access-Control-Allow-Headers','Content-Type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,PUT,DELETE,OPTIONS');if(req.method==='OPTIONS'){if(requestOrigin!==FRONTEND_ORIGIN){res.writeHead(403);return res.end();}res.writeHead(204);return res.end();}}const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});
+const server=http.createServer(async(req,res)=>{try{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'");if(FRONTEND_ORIGINS.length){const requestOrigin=String(req.headers.origin||'').replace(/\/$/,'');const allowedOrigin=FRONTEND_ORIGINS.includes(requestOrigin)?requestOrigin:'';if(allowedOrigin)res.setHeader('Access-Control-Allow-Origin',allowedOrigin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Access-Control-Allow-Headers','Content-Type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,PUT,DELETE,OPTIONS');if(req.method==='OPTIONS'){if(!allowedOrigin){res.writeHead(403);return res.end();}res.writeHead(204);return res.end();}}const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname === '/api/health') return json(res,200,{ok:true,env:NODE_ENV,service:'loqata'});
 if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
   const isProd=NODE_ENV==='production';
   const checks={

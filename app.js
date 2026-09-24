@@ -273,7 +273,7 @@ async function apiRequest(url, options={}){
   try {
     response = await fetch(target, {headers:{"Content-Type":"application/json",...(options.headers||{})}, credentials:isCrossOrigin?"include":"same-origin", ...options});
   } catch (err) {
-    if (isCrossOrigin) throw new Error("خادم متجر لقطة غير متصل. اضبط رابط الـ Backend في api-config.js ثم أعد نشر الموقع.");
+    if (isCrossOrigin) throw new Error("تعذر الوصول إلى خادم لقطة. تأكد أن Railway يعمل وأن Public Domain صحيح ثم راجع FRONTEND_ORIGIN.");
     throw new Error("تعذر الاتصال بخادم متجر لقطة. شغّل server.js أو افتح المتجر من رابط الخادم.");
   }
   const data = await response.json().catch(()=>({}));

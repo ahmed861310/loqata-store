@@ -1,6 +1,6 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.18.2",
+  "version": "5.18.3",
   "private": true,
   "description": "Loqata Store backend — final audit, GitHub Pages/backend connection fix, hardened checkout validation, mobile UX, secure admin auth, and end-to-end validation",
   "scripts": {
