@@ -1,0 +1,2 @@
+LOQATA 5.21.0
+Fixes: guest account save/autofill, cart persistence, WhatsApp order flow without OTP, admin logout retained.

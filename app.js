@@ -166,7 +166,7 @@ ${lines.join("\n")}
 الإجمالي قبل الخصم: ${money(saved.subtotal)}
 الخصم: -${money(saved.discount)}
 الشحن: ${saved.shippingFee===0?'مجاني':money(saved.shippingFee)}
-الإجمالي النهائي: ${money(saved.total)}`;cart=[];saveCart();renderProducts();renderCart();toast('تم حفظ الطلب — جارٍ فتح واتساب');closeCheckout();window.location.href=`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;return;}catch(err){toast(err.message);}}
+الإجمالي النهائي: ${money(saved.total)}`;const whatsappUrl=`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;cart=[];saveCart();renderProducts();renderCart();toast('تم حفظ الطلب وتجهيزه لواتساب');closeCheckout();window.location.href=whatsappUrl;}catch(err){toast(err.message);}}
 function openDemoPayment(order){window.__demoOrder=order;$("paymentDemoText").textContent=`طلب #${order.id} — ${money(order.total)}. هذه محاكاة فقط.`;$("paymentDemoModal").hidden=false;$("paymentDemoOverlay").classList.remove('hidden');document.body.classList.add('modal-open');}
 async function completeDemoPayment(success){try{const r=await apiRequest('/api/payments/demo/complete',{method:'POST',body:JSON.stringify({orderId:window.__demoOrder.id,success})});orders=orders.map(o=>o.id===r.order.id?r.order:o);saveOrders();$("paymentDemoModal").hidden=true;$("paymentDemoOverlay").classList.add('hidden');document.body.classList.remove('modal-open');toast(success?'تمت محاكاة الدفع بنجاح — الطلب قيد التجهيز':'تمت محاكاة فشل الدفع — الطلب ملغي');}catch(err){toast(err.message);}}
 
@@ -422,17 +422,19 @@ loadAuth();
 
 // v2.8.0: صفحة حساب العميل المرتبطة بقاعدة البيانات
 async function openCustomerAccount(){
-  try{
-    let mine=[];
-    if(authenticatedUser){try{const profile=await apiRequest('/api/profile');authenticatedUser=profile.user;mine=await apiRequest('/api/orders/mine');}catch{mine=[];}}
-    const savedCustomer=getSavedCustomer();
-    customer={...savedCustomer};
-    $("accountName").value=savedCustomer.name||(authenticatedUser?.name||'');
-    $("accountPhone").value=savedCustomer.phone||'';
-    $("accountAddress").value=savedCustomer.address||'';
-    $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p><button type="button" class="secondary-btn small-btn" data-track-order="${escapeHtml(o.id)}">🚚 تتبع الشحنة</button></details>`).join('')}`:'<p class="empty">لا توجد طلبات مرتبطة بحسابك حتى الآن.</p>';
-    $("accountModal").hidden=false;$("accountOverlay").classList.remove('hidden');document.body.classList.add('modal-open');
-  }catch(err){toast(err.message);}
+  const savedCustomer=getSavedCustomer();
+  customer={...savedCustomer};
+  $("accountName").value=savedCustomer.name||authenticatedUser?.name||'';
+  $("accountPhone").value=savedCustomer.phone||'';
+  $("accountAddress").value=savedCustomer.address||'';
+  let mine=[];
+  if(authenticatedUser){
+    try{ mine=await apiRequest('/api/orders/mine'); }catch{}
+  }else if(customer.phone){
+    mine=orders.filter(o=>String(o.phone||'').replace(/\D/g,'')===String(customer.phone).replace(/\D/g,''));
+  }
+  $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p></details>`).join('')}`:'<p class="empty">لا توجد طلبات محفوظة حتى الآن.</p>';
+  $("accountModal").hidden=false;$("accountOverlay").classList.remove('hidden');document.body.classList.add('modal-open');
 }
 $("closeAccount")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
 $("accountOverlay")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
