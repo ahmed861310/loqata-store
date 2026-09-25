@@ -39,21 +39,43 @@ let adminCampaigns = [];
 let otpState = {challengeId:"",phone:"",name:"",address:"",couponCode:""};
 let adminUnlocked = false;
 let adminUser = null;
-function saveCustomer(){localStorage.setItem("loqataCustomer",JSON.stringify(customer));}
+function saveCustomer(){
+  const clean={
+    name:String(customer?.name||"").trim(),
+    phone:String(customer?.phone||"").trim(),
+    address:String(customer?.address||"").trim()
+  };
+  customer=clean;
+  try{
+    localStorage.setItem("loqataCustomer",JSON.stringify(clean));
+    localStorage.setItem("loqataCustomerName",clean.name);
+    localStorage.setItem("loqataCustomerPhone",clean.phone);
+    localStorage.setItem("loqataCustomerAddress",clean.address);
+  }catch{}
+}
 function getSavedCustomer(){
   const saved=readJson("loqataCustomer",{});
+  let name=String(saved?.name||"").trim();
+  let phone=String(saved?.phone||"").trim();
+  let address=String(saved?.address||"").trim();
+  try{
+    name=name||String(localStorage.getItem("loqataCustomerName")||"").trim();
+    phone=phone||String(localStorage.getItem("loqataCustomerPhone")||"").trim();
+    address=address||String(localStorage.getItem("loqataCustomerAddress")||"").trim();
+  }catch{}
   return {
-    name:String(saved?.name||customer?.name||"").trim(),
-    phone:String(saved?.phone||customer?.phone||"").trim(),
-    address:String(saved?.address||customer?.address||"").trim()
+    name:name||String(customer?.name||"").trim(),
+    phone:phone||String(customer?.phone||"").trim(),
+    address:address||String(customer?.address||"").trim()
   };
 }
 function fillCheckoutFromSavedCustomer(){
   const saved=getSavedCustomer();
-  customer={...customer,...saved};
-  if($("customerName")) $("customerName").value=saved.name;
-  if($("customerPhone")) $("customerPhone").value=saved.phone;
-  if($("customerAddress")) $("customerAddress").value=saved.address;
+  customer={...saved};
+  const nameEl=$("customerName"), phoneEl=$("customerPhone"), addressEl=$("customerAddress");
+  if(nameEl) nameEl.value=saved.name||"";
+  if(phoneEl) phoneEl.value=saved.phone||"";
+  if(addressEl) addressEl.value=saved.address||"";
 }
 async function loadLoyalty(){try{loyalty=await apiRequest('/api/loyalty');}catch{loyalty={points:0,config:{pointsPerCurrency:0.1,pointValue:1,minRedeem:10}};} const p=$('loyaltyPoints');if(p)p.textContent=Number(loyalty.points||0).toLocaleString('ar-EG'); const r=$('redeemPoints');if(r){r.max=String(Math.floor(loyalty.points||0));r.value=Math.min(Number(r.value||0),Number(loyalty.points||0));} updateCheckoutSummary();}
 async function loadNotifications(){const box=$("accountNotifications");if(!box)return;try{const data=await apiRequest('/api/notifications');const notes=data.items||[];box.innerHTML=notes.length?notes.map(n=>`<div class="notification-card ${n.read?'read':'unread'}"><div><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p><small>${escapeHtml(new Date(n.createdAt).toLocaleString('ar-EG'))}</small></div>${n.read?'':'<button type="button" class="secondary-btn small-btn" data-read-notification="'+escapeHtml(n.id)+'">تمت القراءة</button>'}</div>`).join(''):'<p class="empty">لا توجد إشعارات حتى الآن.</p>';const badge=$("notificationBadge");if(badge){badge.textContent=data.unread||0;badge.hidden=!(data.unread>0);}}catch(e){box.innerHTML='<p class="empty">سجّل الدخول لعرض الإشعارات.</p>';}}
@@ -405,9 +427,11 @@ async function openCustomerAccount(){
     const profile=await apiRequest('/api/profile');
     const mine=await apiRequest('/api/orders/mine');
     authenticatedUser=profile.user;
-    $("accountName").value=authenticatedUser.name||'';
-    $("accountPhone").value=customer.phone||'';
-    $("accountAddress").value=customer.address||'';
+    const savedCustomer=getSavedCustomer();
+    customer={...savedCustomer};
+    $("accountName").value=savedCustomer.name||authenticatedUser.name||'';
+    $("accountPhone").value=savedCustomer.phone||'';
+    $("accountAddress").value=savedCustomer.address||'';
     $("accountOrders").innerHTML=mine.length?`<h3>طلباتي السابقة</h3>${mine.map(o=>`<details class="order-card"><summary>#${escapeHtml(o.id)} — ${money(o.total)} — ${escapeHtml(o.status||'جديد')}</summary><p>${escapeHtml(o.date||'')}<br>${(o.items||[]).map(i=>`${escapeHtml(i.name)} × ${i.qty}`).join('<br>')}</p><button type="button" class="secondary-btn small-btn" data-track-order="${escapeHtml(o.id)}">🚚 تتبع الشحنة</button></details>`).join('')}`:'<p class="empty">لا توجد طلبات مرتبطة بحسابك حتى الآن.</p>';
     $("accountModal").hidden=false;$("accountOverlay").classList.remove('hidden');document.body.classList.add('modal-open');
   }catch(err){toast(err.message);}
@@ -415,7 +439,7 @@ async function openCustomerAccount(){
 $("closeAccount")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
 $("accountOverlay")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
 $("accountForm")?.addEventListener('submit',e=>{e.preventDefault();customer={name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();fillCheckoutFromSavedCustomer();toast('تم حفظ البيانات وستظهر تلقائيًا في الطلب');});
-['accountName','accountPhone','accountAddress'].forEach(id=>$(id)?.addEventListener('change',()=>{customer={name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();}));
+['accountName','accountPhone','accountAddress'].forEach(id=>$(id)?.addEventListener('input',()=>{customer={name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();}));
 const previousHandleSetting=handleSetting;
 handleSetting=function(action){if(action==='account'){openCustomerAccount();return;}return previousHandleSetting(action);};
 
