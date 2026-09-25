@@ -164,28 +164,43 @@ async function openAdmin(){
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
-function logoutAdmin(){
-  const btn=$("adminLogoutBtn");
-  if(btn){btn.disabled=true;btn.textContent="جارٍ تسجيل الخروج...";}
+function logoutAdmin(event){
+  // v5.19.9: close the admin UI FIRST. Nothing before these lines may throw or wait.
+  try{event?.preventDefault();event?.stopPropagation();}catch{}
+  const modal=document.getElementById("adminModal");
+  const loginModal=document.getElementById("adminLoginModal");
+  const detailsModal=document.getElementById("adminOrderDetailsModal");
+  const overlay=document.getElementById("adminOverlay");
+  if(modal){modal.hidden=true;modal.style.display="none";}
+  if(loginModal){loginModal.hidden=true;loginModal.style.display="none";}
+  if(detailsModal){detailsModal.hidden=true;detailsModal.style.display="none";}
+  if(overlay){overlay.classList.add("hidden");overlay.style.display="none";}
+  document.body.classList.remove("modal-open");
 
-  // Log out in the UI immediately. Do not make the user wait for Railway/CORS/network.
-  adminUser=null;
-  adminUnlocked=false;
-  authenticatedUser=null;
-  localStorage.setItem("loqataAdminLoggedOut","1");
-  closeAdminOrderDetails();
-  closeAdmin();
+  // Clear all client-side admin state independently so one failure cannot block logout.
+  try{adminUser=null;}catch{}
+  try{adminUnlocked=false;}catch{}
+  try{authenticatedUser=null;}catch{}
+  try{adminOrderDetailsId=null;}catch{}
+  try{localStorage.setItem("loqataAdminLoggedOut","1");}catch{}
+
+  const btn=document.getElementById("adminLogoutBtn");
   if(btn){btn.disabled=false;btn.textContent="🚪 تسجيل خروج المدير";}
-  toast("تم تسجيل خروج المدير");
+  try{toast("تم تسجيل خروج المدير");}catch{}
 
-  // Best-effort server logout with a short timeout. The local logout above is authoritative
-  // for dashboard access, so a slow/unreachable backend can no longer freeze the button.
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),2500);
-  fetch(apiUrl('/api/auth/logout'),{method:'POST',credentials:'include',signal:controller.signal})
-    .catch(err=>console.warn('Background admin logout failed',err))
-    .finally(()=>clearTimeout(timer));
+  // Invalidate the HttpOnly server session without ever blocking the interface.
+  // keepalive lets the request continue even if the page is closed/refreshed.
+  try{
+    fetch(apiUrl('/api/auth/logout'),{
+      method:'POST',
+      credentials:'include',
+      keepalive:true,
+      cache:'no-store',
+      headers:{'Accept':'application/json'}
+    }).catch(()=>{});
+  }catch{}
 }
+
 $("adminLogoutBtn")?.addEventListener("click",logoutAdmin);
 
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
