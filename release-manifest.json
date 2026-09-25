@@ -1,6 +1,6 @@
 {
   "name": "Loqata Store",
-  "version": "5.21.2",
+  "version": "5.21.4",
   "focus": "Deployment-safe bundle + direct customer autofill + cart persistence + WhatsApp order + admin logout",
   "paymob_mode": "test",
   "real_credentials_included": false,
