@@ -177,7 +177,7 @@
     </form>
   </section>
   <section id="adminModal" class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
-    <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <div class="product-modal-head"><h2 id="adminTitle">📊 لوحة تحكم لقطة</h2><div class="admin-head-actions"><button id="adminLogoutBtn" class="danger-btn admin-logout-btn" type="button">🚪 تسجيل خروج المدير</button><button id="closeAdmin" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div></div>
     <div class="admin-content">
       <div id="adminStats" class="admin-stats"></div><div id="adminInsights" class="admin-insights"></div><div class="admin-notification-head"><h3>🔔 إشعارات الإدارة <span id="adminNotificationBadge" class="status-pill" hidden>0</span></h3><button type="button" class="secondary-btn small-btn" data-admin-read-all-notifications>تعليم الكل كمقروء</button></div><div id="adminNotifications" class="admin-orders"><p class="empty">جارٍ تحميل الإشعارات...</p></div>
       <h3>⚙️ إعدادات الإشعارات وقوالب الرسائل</h3><p class="admin-note">يمكنك تشغيل أو إيقاف كل نوع وتعديل نص الرسالة. المتغيرات المدعومة: {orderId} {total} {status} {shippingStatus} {tracking} {paymentStatus} {productName} {oldPrice} {newPrice}</p><form id="notificationSettingsForm" class="notification-settings-form"><div id="notificationSettingsAdmin"></div><button class="primary-btn" type="submit">حفظ إعدادات الإشعارات</button><button class="secondary-btn" type="button" id="notificationDefaultsBtn">استعادة الإعدادات الافتراضية</button></form>

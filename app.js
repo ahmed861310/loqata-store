@@ -159,6 +159,24 @@ async function openAdmin(){
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
+async function logoutAdmin(){
+  const btn=$("adminLogoutBtn");
+  if(btn){btn.disabled=true;btn.textContent="جارٍ تسجيل الخروج...";}
+  try{
+    await apiRequest('/api/auth/logout',{method:'POST'});
+  }catch(err){
+    console.warn('Admin logout request failed',err);
+  }finally{
+    adminUser=null;
+    adminUnlocked=false;
+    authenticatedUser=null;
+    closeAdminOrderDetails();
+    closeAdmin();
+    if(btn){btn.disabled=false;btn.textContent="🚪 تسجيل خروج المدير";}
+    toast('تم تسجيل خروج المدير بأمان');
+  }
+}
+$("adminLogoutBtn")?.addEventListener("click",logoutAdmin);
 
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-read-notification]');if(b){try{await apiRequest('/api/notifications/read',{method:'POST',body:JSON.stringify({id:b.dataset.readNotification})});loadNotifications();}catch(err){toast(err.message);}}const all=e.target.closest('[data-read-all-notifications]');if(all){try{await apiRequest('/api/notifications/read-all',{method:'POST'});loadNotifications();toast('تم تعليم الإشعارات كمقروءة');}catch(err){toast(err.message);}}const adminAll=e.target.closest('[data-admin-read-all-notifications]');if(adminAll){try{await apiRequest('/api/admin/notifications/read-all',{method:'POST'});loadAdminNotifications();toast('تم تعليم الإشعارات الإدارية كمقروءة');}catch(err){toast(err.message);}}});
