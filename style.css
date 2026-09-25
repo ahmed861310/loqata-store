@@ -311,5 +311,5 @@ body.modal-open{overflow:hidden}
   .checkout-form{padding:10px}
 }
 
-/* v5.19.5 admin secure logout */
+/* v5.19.6 admin secure logout */
 .admin-head-actions{display:flex;align-items:center;gap:8px}.admin-logout-btn{white-space:nowrap;padding:9px 12px}.admin-logout-btn:disabled{opacity:.65;cursor:wait}@media(max-width:600px){.admin-head-actions{gap:5px}.admin-logout-btn{font-size:.78rem;padding:8px}}

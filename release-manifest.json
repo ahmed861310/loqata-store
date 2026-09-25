@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.18.4",
-  "focus": "Frontend connected to Railway production API",
+  "version": "5.19.6",
+  "focus": "Admin secure logout release rebuild",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
