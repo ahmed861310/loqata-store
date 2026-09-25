@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.21.9",
-  "focus": "Checkout without SMS/OTP dependency",
+  "version": "5.21.14",
+  "focus": "Clean no-SMS checkout, cart/catalog reconciliation, refreshed index",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,

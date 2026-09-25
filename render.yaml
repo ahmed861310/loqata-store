@@ -36,5 +36,3 @@ services:
         sync: false
       - key: PAYMOB_REDIRECT_URL
         sync: false
-      - key: OTP_WEBHOOK_URL
-        sync: false

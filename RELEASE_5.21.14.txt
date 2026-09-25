@@ -1,0 +1,7 @@
+Loqata v5.21.14 CLEAN
+- SMS/OTP removed from checkout and backend.
+- Product/cart IDs are compared safely as strings.
+- Cart is reconciled against live backend stock before checkout.
+- Removed obsolete version-specific deployment/OTP reports from the release package.
+- Cleaned environment template and removed duplicate settings.
+- index.html, package.json and release manifest aligned to 5.21.14.

@@ -18,10 +18,6 @@ const DB_FILE = process.env.LOQATA_DB_FILE || path.join(DATA_DIR, 'db.json');
 const sessions = new Map();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const ORDER_STATUSES = new Set(['جديد','قيد التجهيز','تم الشحن','مكتمل','ملغي']);
-const OTP_TTL_MS = 1000 * 60 * 5;
-const OTP_MAX_ATTEMPTS = 5;
-const OTP_RESEND_MS = 1000 * 60;
-const OTP_MAX_PER_HOUR = 5;
 const paymentService = createPaymentService();
 const restoreOrderStock = (db, order) => {
   if (!order || order.stockRestored) return false;
@@ -48,7 +44,7 @@ const DEFAULT_PRODUCTS = [
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING, otpChallenges: [], notifications: [], campaigns: [], reviews: [], questions: [] }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], products: [], orders: [], coupons: [], shipping: DEFAULT_SHIPPING, notifications: [], campaigns: [], reviews: [], questions: [] }, null, 2));
 }
 const readDb = () => { const db=JSON.parse(fs.readFileSync(DB_FILE,'utf8')); if(!Array.isArray(db.products)) db.products=[]; if(!db.catalogInitialized){ if(db.products.length===0) db.products=DEFAULT_PRODUCTS.map(p=>({...p})); db.catalogInitialized=true; fs.writeFileSync(DB_FILE,JSON.stringify(db,null,2)); } if(!db.shipping) db.shipping=DEFAULT_SHIPPING; if(!Array.isArray(db.notifications)) db.notifications=[]; if(!Array.isArray(db.campaigns)) db.campaigns=[]; if(!Array.isArray(db.reviews)) db.reviews=[]; if(!Array.isArray(db.questions)) db.questions=[]; if(!Array.isArray(db.wishlist)) db.wishlist=[]; if(!db.notificationSettings) db.notificationSettings=DEFAULT_NOTIFICATION_SETTINGS; if(!db.notificationTemplates) db.notificationTemplates=DEFAULT_NOTIFICATION_TEMPLATES; if(!db.loyalty) db.loyalty={config:{...LOYALTY_CONFIG},balances:{}}; if(!db.loyalty.config) db.loyalty.config={...LOYALTY_CONFIG}; if(!db.loyalty.balances) db.loyalty.balances={}; return db; };
 const DEFAULT_NOTIFICATION_SETTINGS={customer:{order_created:true,order_status:true,shipping_update:true,payment_update:true,price_drop:true,restock:true},admin:{new_order:true,order_status:true,shipping_update:true,payment_update:true,price_drop:true,restock:true,campaign_created:true}};
@@ -65,83 +61,9 @@ const body = req => new Promise((resolve,reject)=>{let s='';let size=0;let settl
 const currentUser = req => { const sid=parseCookies(req).loqata_session; const session=sessions.get(sid); if(!session)return null; if(Date.now()-session.createdAt>SESSION_TTL_MS){sessions.delete(sid);return null;} return readDb().users.find(u=>u.id===session.userId)||null; };
 const id = prefix => prefix + '_' + crypto.randomBytes(8).toString('hex');
 const normalizePhone = value => String(value||'').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g,'');
-const sendOtp = async (phone, code) => {
-  // SMS Misr / SMS.com.eg OTP API. Credentials stay server-side on Railway.
-  const username = process.env.SMSMISR_USERNAME;
-  const password = process.env.SMSMISR_PASSWORD;
-  const sender = process.env.SMSMISR_SENDER;
-  const template = process.env.SMSMISR_OTP_TEMPLATE;
-  const environment = String(process.env.SMSMISR_ENVIRONMENT || '2'); // 2=test, 1=live
-  if (username && password && sender) {
-    const mobile = phone.startsWith('0') ? `20${phone.slice(1)}` : phone;
-    // SMS Misr OTP API requires an approved template. If no OTP template is provisioned
-    // on this account, fall back to the regular SMS API and send the one-time code as
-    // a transactional message. Credentials remain server-side.
-    const useOtpApi = Boolean(template);
-    const payload = useOtpApi
-      ? new URLSearchParams({ environment, username, password, sender, mobile, template, otp: code })
-      : new URLSearchParams({ environment, username, password, sender, mobile, language:'2', message:`رمز تأكيد طلب لقطة: ${code}` });
-    const r = await fetch(useOtpApi ? 'https://smsmisr.com/api/OTP/' : 'https://smsmisr.com/api/SMS/', {
-      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:payload
-    });
-    let result={}; try { result=await r.json(); } catch { result={}; }
-    const providerCode = String(result.code ?? result.Code ?? result.status ?? result.Status ?? '');
-    const providerMessage = String(result.message ?? result.Message ?? result.error ?? result.Error ?? '');
-    // SMS Misr can return HTTP 200 even when the provider rejects the message.
-    // 1901 is the documented success code for a successfully submitted message/OTP.
-    const providerAccepted = r.ok && providerCode === '1901';
-    console.log('SMS Misr OTP response', {
-      httpStatus: r.status,
-      providerCode: providerCode || null,
-      providerMessage: providerMessage || null,
-      api: useOtpApi ? 'OTP' : 'SMS'
-    });
-    if (!providerAccepted) {
-      console.error('SMS Misr OTP rejected', {httpStatus:r.status, providerCode:providerCode||null, providerMessage:providerMessage||null});
-      throw new Error(`تعذر إرسال رمز التحقق عبر SMS Misr${providerCode ? ` (${providerCode})` : ''}`);
-    }
-    return {sent:true, provider:'smsmisr', providerCode, providerMessage};
-  }
-  const webhook = process.env.OTP_WEBHOOK_URL;
-  if (webhook) {
-    const r = await fetch(webhook, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,message:`رمز تأكيد طلب لقطة: ${code}`})});
-    if (!r.ok) throw new Error('تعذر إرسال رسالة التحقق');
-    return {sent:true,provider:'webhook'};
-  }
-  if (process.env.NODE_ENV === 'production') throw new Error('أضف بيانات SMS Misr إلى Railway Variables');
-  return {devCode: code};
-};
-
 const loyaltyBalance=(db,userId)=>Math.max(0,Number(db.loyalty?.balances?.[userId]||0));
 const awardLoyalty=(db,order)=>{if(!order.userId||order.status!=='مكتمل'||order.loyaltyAwarded)return 0;const base=Math.max(0,Number(order.subtotal||0)-Number(order.discount||0));const points=Math.floor(base*Number(db.loyalty?.config?.pointsPerCurrency??LOYALTY_CONFIG.pointsPerCurrency));if(points>0){db.loyalty.balances[order.userId]=loyaltyBalance(db,order.userId)+points;order.loyaltyAwarded=points;order.loyaltyAwardedAt=new Date().toISOString();addNotification(db,{userId:order.userId,role:'customer',type:'order_status',orderId:order.id,title:'🎁 نقاط ولاء',message:`تمت إضافة ${points} نقطة إلى رصيدك بعد اكتمال الطلب #${order.id}.`,vars:{orderId:order.id,status:order.status}});}return points;};
 async function api(req,res,url){
-  if(req.method==='POST' && url==='/api/otp/request'){
-    const b=await body(req); const phone=normalizePhone(b.phone);
-    if(!/^01\d{9}$/.test(phone)) return json(res,400,{error:'أدخل رقم هاتف مصري صحيح من 11 رقمًا'});
-    const db=readDb(); db.otpChallenges=Array.isArray(db.otpChallenges)?db.otpChallenges:[];
-    const now=Date.now(); db.otpChallenges=db.otpChallenges.filter(x=>now-x.createdAt<60*60*1000 && !x.verified);
-    const recent=db.otpChallenges.filter(x=>x.phone===phone && now-x.createdAt<60*60*1000);
-    if(recent.length>=OTP_MAX_PER_HOUR) return json(res,429,{error:'تم تجاوز حد طلبات التحقق. حاول لاحقًا'});
-    const active=recent.find(x=>!x.verified && now-x.createdAt<OTP_RESEND_MS);
-    if(active) return json(res,429,{error:'انتظر دقيقة قبل طلب رمز جديد'});
-    const code=String(crypto.randomInt(100000,1000000)); const salt=crypto.randomBytes(16).toString('hex');
-    const challenge={id:id('otp'),phone,salt,codeHash:crypto.scryptSync(code,salt,32).toString('hex'),createdAt:now,expiresAt:now+OTP_TTL_MS,attempts:0,verified:false};
-    db.otpChallenges.push(challenge); writeDb(db);
-    try { const delivery=await sendOtp(phone,code); return json(res,200,{challengeId:challenge.id,expiresIn:OTP_TTL_MS/1000,devCode:delivery.devCode||undefined,message:'تم إرسال رمز التحقق'}); }
-    catch(e){ db.otpChallenges=db.otpChallenges.filter(x=>x.id!==challenge.id); writeDb(db); return json(res,502,{error:e.message||'تعذر إرسال رمز التحقق'}); }
-  }
-  if(req.method==='POST' && url==='/api/otp/verify'){
-    const b=await body(req); const phone=normalizePhone(b.phone); const code=String(b.code||'').trim(); const db=readDb();
-    const c=(db.otpChallenges||[]).find(x=>x.id===String(b.challengeId||'')&&x.phone===phone&&!x.verified);
-    if(!c) return json(res,400,{error:'رمز التحقق غير صالح أو انتهت صلاحيته'});
-    if(Date.now()>c.expiresAt) return json(res,400,{error:'انتهت صلاحية رمز التحقق. اطلب رمزًا جديدًا'});
-    if(c.attempts>=OTP_MAX_ATTEMPTS) return json(res,429,{error:'تم تجاوز عدد المحاولات. اطلب رمزًا جديدًا'});
-    c.attempts++;
-    const supplied=crypto.scryptSync(code,c.salt,32).toString('hex');
-    if(!crypto.timingSafeEqual(Buffer.from(supplied,'hex'),Buffer.from(c.codeHash,'hex'))){writeDb(db);return json(res,400,{error:'رمز التحقق غير صحيح'});}
-    c.verified=true; c.verifiedAt=Date.now(); c.verificationToken=id('vfy'); c.verificationTokenExpiresAt=Date.now()+10*60*1000; writeDb(db);
-    return json(res,200,{verificationToken:c.verificationToken});
-  }
   if(req.method==='POST' && url==='/api/auth/register'){
     const b=await body(req); if(!b.name||!b.email||!b.password||b.password.length<8)return json(res,400,{error:'الاسم والبريد وكلمة المرور (8 أحرف على الأقل) مطلوبة'});
     const db=readDb(); const email=b.email.trim().toLowerCase(); if(db.users.some(u=>u.email===email))return json(res,409,{error:'البريد مستخدم بالفعل'});
@@ -433,7 +355,6 @@ if(url.pathname === '/api/production-readiness' && req.method === 'GET'){
   const isProd=NODE_ENV==='production';
   const checks={
     nodeEnv:isProd,
-    otpWebhook:!!process.env.OTP_WEBHOOK_URL,
     paymentProvider:paymentService.provider==='paymob',
     paymobSecret:!!process.env.PAYMOB_SECRET_KEY,
     paymobPublic:!!process.env.PAYMOB_PUBLIC_KEY,
