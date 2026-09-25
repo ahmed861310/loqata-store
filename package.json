@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.21.15",
+  "version": "5.21.16",
   "private": true,
-  "description": "Loqata Store v5.21.15 — checkout without SMS or phone verification",
+  "description": "Loqata Store v5.21.16 — checkout without SMS or phone verification",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",

@@ -1,0 +1,4 @@
+Loqata 5.21.16
+Fixed the exact browser checkout path that falsely aborted on the duplicate product refresh.
+Backend quote/order endpoints remain authoritative for stock and price.
+16/16 E2E PASS.

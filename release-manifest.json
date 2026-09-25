@@ -1,6 +1,6 @@
 {
   "name": "Loqata Store",
-  "version": "5.21.15",
+  "version": "5.21.16",
   "focus": "Frontend live inventory verification hardening; normalized product IDs; no SMS/OTP",
   "paymob_mode": "test",
   "real_credentials_included": false,

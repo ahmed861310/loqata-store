@@ -171,28 +171,23 @@ async function updateCheckoutSummary(){const box=$("checkoutSummary");if(!box)re
 async function openCheckout(){
   const storedCart=readJson("loqataCart",cart); if(Array.isArray(storedCart)) cart=storedCart; renderCart();
   if(!cart.length) return toast("أضف منتجًا إلى السلة أولًا");
-  // Always validate the cart against the live backend inventory before checkout.
+  // Refresh catalogue opportunistically, but never block checkout on this duplicate GET.
+  // Authoritative stock/price validation happens on the backend quote/order endpoints.
   try{
     const remote=await apiRequest("/api/products");
     if(Array.isArray(remote)){
       products=remote; saveProducts();
       const byId=new Map(remote.map(p=>[String(p.id),p]));
-      const removedNames=[];
-      const reconciled=[];
-      for(const item of cart){
+      cart=cart.map(item=>{
         const live=byId.get(String(item.id));
-        if(!live){ removedNames.push(item.name||`#${item.id}`); continue; }
-        const available=Math.max(0,Number(live.stock||0));
-        if(available<=0){ removedNames.push(live.name||item.name); continue; }
-        const qty=Math.min(Math.max(1,Number(item.qty||1)),available);
-        reconciled.push({...item,...live,qty,price:effectivePrice(live),stock:available});
-      }
-      cart=reconciled;
+        if(!live) return item;
+        return {...item,...live,qty:Math.max(1,Number(item.qty||1)),price:effectivePrice(live),stock:Math.max(0,Number(live.stock??0))};
+      });
       saveCart(); renderProducts(); renderCart();
-      if(removedNames.length) toast(`تم تحديث السلة وإزالة المنتجات غير المتاحة: ${removedNames.join("، ")}`);
-      if(!cart.length) return toast("السلة أصبحت فارغة بعد تحديث المخزون");
     }
-  }catch(err){ return toast("تعذر تحديث المخزون. تحقق من الاتصال وحاول مرة أخرى"); }
+  }catch(err){
+    console.warn("Pre-checkout catalogue refresh skipped:",err);
+  }
   // Snapshot the account form BEFORE any async work. This is the canonical source
   // when the customer has just saved/edited their data on this page.
   const accountSnapshot={
