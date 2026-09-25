@@ -62,18 +62,32 @@ const sendOtp = async (phone, code) => {
   const sender = process.env.SMSMISR_SENDER;
   const template = process.env.SMSMISR_OTP_TEMPLATE;
   const environment = String(process.env.SMSMISR_ENVIRONMENT || '2'); // 2=test, 1=live
-  if (username && password && sender && template) {
+  if (username && password && sender) {
     const mobile = phone.startsWith('0') ? `20${phone.slice(1)}` : phone;
-    const payload = new URLSearchParams({ environment, username, password, sender, mobile, template, otp: code });
-    const r = await fetch('https://smsmisr.com/api/OTP/', {
+    // SMS Misr OTP API requires an approved template. If no OTP template is provisioned
+    // on this account, fall back to the regular SMS API and send the one-time code as
+    // a transactional message. Credentials remain server-side.
+    const useOtpApi = Boolean(template);
+    const payload = useOtpApi
+      ? new URLSearchParams({ environment, username, password, sender, mobile, template, otp: code })
+      : new URLSearchParams({ environment, username, password, sender, mobile, language:'2', message:`رمز تأكيد طلب لقطة: ${code}` });
+    const r = await fetch(useOtpApi ? 'https://smsmisr.com/api/OTP/' : 'https://smsmisr.com/api/SMS/', {
       method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:payload
     });
-    let result={}; try { result=await r.json(); } catch { result={}; }
-    if (!r.ok || result.error || result.Error) {
-      console.error('SMS Misr OTP error', r.status, result);
-      throw new Error('تعذر إرسال رمز التحقق عبر SMS Misr');
+    let result={};
+    try { result=await r.json(); } catch { result={}; }
+    const providerCode = String(result.code ?? result.Code ?? result.status ?? result.Status ?? '');
+    const providerMessage = String(result.message ?? result.Message ?? result.error ?? result.Error ?? '');
+    // Never log credentials, phone numbers, or the OTP itself.
+    console.log('SMS Misr OTP response', { httpStatus:r.status, providerCode, providerMessage });
+    // SMS Misr OTP success code is 1901. HTTP 200 alone does not mean the SMS was accepted.
+    if (!r.ok || providerCode !== '1901') {
+      console.error('SMS Misr OTP rejected', { httpStatus:r.status, providerCode, providerMessage });
+      const e = new Error(providerMessage ? `SMS Misr: ${providerMessage} (${providerCode || r.status})` : `SMS Misr رفض إرسال الرمز (${providerCode || r.status})`);
+      e.providerCode = providerCode || null;
+      throw e;
     }
-    return {sent:true, provider:'smsmisr', providerCode:result.code||result.Code||null};
+    return {sent:true, provider:'smsmisr', providerCode};
   }
   const webhook = process.env.OTP_WEBHOOK_URL;
   if (webhook) {
