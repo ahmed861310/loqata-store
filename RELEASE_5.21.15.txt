@@ -1,0 +1,7 @@
+Loqata v5.21.15
+- Updated index/cache version to 5.21.15.
+- Hardened frontend inventory refresh error handling.
+- Product/cart IDs normalized for backend comparisons.
+- Backend remains authoritative for product availability and stock.
+- COD remains without SMS/OTP.
+- JavaScript syntax and project E2E tests checked before packaging.

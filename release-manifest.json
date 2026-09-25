@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.21.14",
-  "focus": "Clean no-SMS checkout, cart/catalog reconciliation, refreshed index",
+  "version": "5.21.15",
+  "focus": "Frontend live inventory verification hardening; normalized product IDs; no SMS/OTP",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
