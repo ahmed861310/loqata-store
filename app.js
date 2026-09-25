@@ -168,7 +168,33 @@ async function loadShippingSettings(){shippingSettings=JSON.parse(JSON.stringify
 function checkoutSubtotal(){return cart.reduce((s,i)=>s+i.qty*Number(i.price||0),0);}
 async function getCheckoutQuote(){if(!cart.length)return null;const data=await apiRequest('/api/checkout/quote',{method:'POST',body:JSON.stringify({items:cart.map(i=>({id:i.id,qty:i.qty})),couponCode:selectedCoupon?.code||$("couponCode")?.value.trim().toUpperCase()||"",shippingZone:$("shippingZone")?.value||""})});return data;}
 async function updateCheckoutSummary(){const box=$("checkoutSummary");if(!box)return;box.innerHTML='<strong>ملخص الطلب</strong><p class="empty">جارٍ تحديث الأسعار والعروض...</p>';try{const q=await getCheckoutQuote();if(!q)return; if(q.appliedCampaign&&!selectedCoupon){selectedCoupon={code:q.couponCode,discount:q.discount,label:q.couponLabel,auto:true};$("couponCode").value=q.couponCode||"";$("couponMessage").textContent=`تم تطبيق العرض تلقائيًا: ${q.couponLabel||"خصم"}`;}const discount=Number(q.discount||0);const requested=Math.max(0,Math.floor(Number($("redeemPoints")?.value||0)));const available=Math.floor(Number(loyalty.points||0));const pointsUsed=Math.min(requested,available);const loyaltyDiscount=Math.min(Math.max(0,Number(q.subtotal||0)-discount),pointsUsed*Number(loyalty.config?.pointValue||1));const total=Math.max(0,Number(q.total||0)-loyaltyDiscount);box.innerHTML=`<strong>ملخص الطلب</strong>${q.items.map(i=>`<div>${escapeHtml(i.name)} × ${i.qty} — ${i.originalPrice>i.price?`<s>${money(i.originalPrice*i.qty)}</s> `:""}${money(i.price*i.qty)}</div>`).join("")}<hr><div>الإجمالي قبل الخصم: ${money(q.subtotal)}</div><div>خصم العرض/الكوبون: -${money(discount)}</div>${pointsUsed?`<div>خصم نقاط الولاء (${pointsUsed} نقطة): -${money(loyaltyDiscount)}</div>`:""}<div>الشحن: ${q.shippingFee===0?"مجاني 🎉":money(q.shippingFee)}</div><strong>الإجمالي النهائي: ${money(total)}</strong>`;}catch(err){const subtotal=cart.reduce((sum,i)=>sum+effectivePrice(i)*Number(i.qty||0),0);const zone=(shippingSettings.zones||DEFAULT_SHIPPING_SETTINGS.zones).find(z=>String(z.id)===String($("shippingZone")?.value||""));const shippingFee=zone?(subtotal>=Number(shippingSettings.freeShippingThreshold||1000)?0:Number(zone.fee||0)):0;box.innerHTML=`<strong>ملخص الطلب</strong>${cart.map(i=>`<div>${escapeHtml(i.name)} × ${i.qty} — ${money(effectivePrice(i)*i.qty)}</div>`).join("")}<hr><div>الإجمالي قبل الخصم: ${money(subtotal)}</div><div>الشحن: ${zone?(shippingFee===0?"مجاني 🎉":money(shippingFee)):"اختر منطقة التوصيل"}</div><strong>الإجمالي النهائي: ${money(subtotal+shippingFee)}</strong>`;}}
-async function openCheckout(){const storedCart=readJson("loqataCart",cart);if(Array.isArray(storedCart))cart=storedCart;renderCart();const storedCustomer=readJson("loqataCustomer",customer);if(storedCustomer&&typeof storedCustomer==="object")customer={...customer,...storedCustomer};if(!cart.length)return toast("أضف منتجًا إلى السلة أولًا");await loadShippingSettings();selectedCoupon=null;$("couponCode").value="";if($("redeemPoints"))$("redeemPoints").value=0;loadLoyalty();$("couponMessage").textContent="";fillCheckoutFromSavedCustomer();updateCheckoutSummary();$("checkoutModal").hidden=false;$("checkoutOverlay").classList.remove("hidden");document.body.classList.add("modal-open");}
+async function openCheckout(){
+  const storedCart=readJson("loqataCart",cart); if(Array.isArray(storedCart)) cart=storedCart; renderCart();
+  if(!cart.length) return toast("أضف منتجًا إلى السلة أولًا");
+  // Snapshot the account form BEFORE any async work. This is the canonical source
+  // when the customer has just saved/edited their data on this page.
+  const accountSnapshot={
+    name:String($("accountName")?.value||"").trim(),
+    phone:String($("accountPhone")?.value||"").trim(),
+    address:String($("accountAddress")?.value||"").trim()
+  };
+  const stored=getSavedCustomer();
+  customer={
+    name:accountSnapshot.name||stored.name||"",
+    phone:accountSnapshot.phone||stored.phone||"",
+    address:accountSnapshot.address||stored.address||""
+  };
+  if(customer.name||customer.phone||customer.address) saveCustomer();
+  await loadShippingSettings();
+  selectedCoupon=null; $("couponCode").value=""; if($("redeemPoints")) $("redeemPoints").value=0;
+  loadLoyalty(); $("couponMessage").textContent="";
+  // Show the modal first, then populate the actual visible checkout controls.
+  $("checkoutModal").hidden=false; $("checkoutOverlay").classList.remove("hidden"); document.body.classList.add("modal-open");
+  fillCheckoutFromSavedCustomer();
+  requestAnimationFrame(()=>fillCheckoutFromSavedCustomer());
+  setTimeout(()=>fillCheckoutFromSavedCustomer(),120);
+  updateCheckoutSummary();
+}
 function closeCheckout(){$("checkoutModal").hidden=true;$("checkoutOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 async function sendOrder(name,phone,address,couponCode="",verificationToken="",pointsToRedeem=0){customer={name,phone,address};saveCustomer();const paymentMethod=otpState.paymentMethod||"cod";if(paymentMethod==="card"&&!authenticatedUser){toast("سجّل الدخول أولًا لاستخدام الدفع الإلكتروني");showAuth();return;}const order={name,phone,address,shippingZone:$('shippingZone').value,paymentMethod,items:cart.map(i=>({id:i.id,qty:i.qty})),couponCode,verificationToken,pointsToRedeem:Number(pointsToRedeem||0)};try{const saved=await apiRequest('/api/orders',{method:'POST',body:JSON.stringify(order)});orders.unshift(saved);saveOrders();const fresh=await apiRequest('/api/products');if(Array.isArray(fresh)){products=fresh;saveProducts();}if(paymentMethod==='card'){const intent=await apiRequest('/api/payments/intents',{method:'POST',body:JSON.stringify({paymentMethod:'card',orderId:saved.id,amount:saved.total,billingData:{name,phone,address},items:saved.items||[]})});cart=[];saveCart();renderProducts();renderCart();closeCheckout();if(intent.provider==='demo'){openDemoPayment(saved);}else if(intent.checkoutUrl){window.location.href=intent.checkoutUrl;}return;}const lines=(saved.items||[]).map(i=>`- ${i.name} × ${i.qty} = ${money(i.qty*i.price)}`);const message=`مرحبًا، أريد تأكيد طلبي من متجر لقطة:
 
