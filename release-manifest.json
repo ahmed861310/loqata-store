@@ -1,6 +1,6 @@
 {
   "name": "Loqata Store",
-  "version": "5.19.6",
+  "version": "5.19.7",
   "focus": "Admin secure logout release rebuild",
   "paymob_mode": "test",
   "real_credentials_included": false,

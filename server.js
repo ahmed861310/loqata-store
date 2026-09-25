@@ -104,7 +104,7 @@ async function api(req,res,url){
     if(!user||!verify(String(b.password||''),user))return json(res,401,{error:'بيانات الدخول غير صحيحة'}); return login(res,user);
   }
   if(req.method==='POST' && url==='/api/auth/logout'){
-    const sid=parseCookies(req).loqata_session; sessions.delete(sid); res.setHeader('Set-Cookie','loqata_session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax'); return json(res,200,{ok:true});
+    const sid=parseCookies(req).loqata_session; sessions.delete(sid); const crossOrigin=Boolean(FRONTEND_ORIGIN); res.setHeader('Set-Cookie',`loqata_session=; HttpOnly; Path=/; Max-Age=0; SameSite=${crossOrigin?'None':'Lax'}${crossOrigin||NODE_ENV==='production'?'; Secure':''}`); return json(res,200,{ok:true});
   }
   if(req.method==='GET' && url==='/api/auth/me'){
     const u=currentUser(req); return json(res,200,{user:u?publicUser(u):null});
