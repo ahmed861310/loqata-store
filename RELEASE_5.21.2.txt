@@ -1,0 +1,3 @@
+LOQATA 5.21.2
+Deploy the CONTENTS of this ZIP to the ROOT of the main branch.
+index.html, app.js, api-config.js and style.css must be replaced together.
