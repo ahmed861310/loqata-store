@@ -56,11 +56,33 @@ const currentUser = req => { const sid=parseCookies(req).loqata_session; const s
 const id = prefix => prefix + '_' + crypto.randomBytes(8).toString('hex');
 const normalizePhone = value => String(value||'').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g,'');
 const sendOtp = async (phone, code) => {
+  // SMS Misr / SMS.com.eg OTP API. Credentials stay server-side on Railway.
+  const username = process.env.SMSMISR_USERNAME;
+  const password = process.env.SMSMISR_PASSWORD;
+  const sender = process.env.SMSMISR_SENDER;
+  const template = process.env.SMSMISR_OTP_TEMPLATE;
+  const environment = String(process.env.SMSMISR_ENVIRONMENT || '2'); // 2=test, 1=live
+  if (username && password && sender && template) {
+    const mobile = phone.startsWith('0') ? `20${phone.slice(1)}` : phone;
+    const payload = new URLSearchParams({ environment, username, password, sender, mobile, template, otp: code });
+    const r = await fetch('https://smsmisr.com/api/OTP/', {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:payload
+    });
+    let result={}; try { result=await r.json(); } catch { result={}; }
+    if (!r.ok || result.error || result.Error) {
+      console.error('SMS Misr OTP error', r.status, result);
+      throw new Error('تعذر إرسال رمز التحقق عبر SMS Misr');
+    }
+    return {sent:true, provider:'smsmisr', providerCode:result.code||result.Code||null};
+  }
   const webhook = process.env.OTP_WEBHOOK_URL;
-  if (!webhook) { if (process.env.NODE_ENV === 'production') throw new Error('لم يتم إعداد مزود رسائل SMS للإنتاج'); return {devCode: code}; }
-  const r = await fetch(webhook, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,message:`رمز تأكيد طلب لقطة: ${code}`})});
-  if (!r.ok) throw new Error('تعذر إرسال رسالة التحقق');
-  return {sent:true};
+  if (webhook) {
+    const r = await fetch(webhook, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,code,message:`رمز تأكيد طلب لقطة: ${code}`})});
+    if (!r.ok) throw new Error('تعذر إرسال رسالة التحقق');
+    return {sent:true,provider:'webhook'};
+  }
+  if (process.env.NODE_ENV === 'production') throw new Error('أضف بيانات SMS Misr إلى Railway Variables');
+  return {devCode: code};
 };
 
 const loyaltyBalance=(db,userId)=>Math.max(0,Number(db.loyalty?.balances?.[userId]||0));

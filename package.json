@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.20.1",
+  "version": "5.21.5",
   "private": true,
-  "description": "Loqata Store v5.20.1 — cart/customer autofill + deploy refresh",
+  "description": "Loqata Store v5.21.5 — cart/customer autofill + deploy refresh",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",
