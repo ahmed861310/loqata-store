@@ -74,20 +74,23 @@ const sendOtp = async (phone, code) => {
     const r = await fetch(useOtpApi ? 'https://smsmisr.com/api/OTP/' : 'https://smsmisr.com/api/SMS/', {
       method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:payload
     });
-    let result={};
-    try { result=await r.json(); } catch { result={}; }
+    let result={}; try { result=await r.json(); } catch { result={}; }
     const providerCode = String(result.code ?? result.Code ?? result.status ?? result.Status ?? '');
     const providerMessage = String(result.message ?? result.Message ?? result.error ?? result.Error ?? '');
-    // Never log credentials, phone numbers, or the OTP itself.
-    console.log('SMS Misr OTP response', { httpStatus:r.status, providerCode, providerMessage });
-    // SMS Misr OTP success code is 1901. HTTP 200 alone does not mean the SMS was accepted.
-    if (!r.ok || providerCode !== '1901') {
-      console.error('SMS Misr OTP rejected', { httpStatus:r.status, providerCode, providerMessage });
-      const e = new Error(providerMessage ? `SMS Misr: ${providerMessage} (${providerCode || r.status})` : `SMS Misr رفض إرسال الرمز (${providerCode || r.status})`);
-      e.providerCode = providerCode || null;
-      throw e;
+    // SMS Misr can return HTTP 200 even when the provider rejects the message.
+    // 1901 is the documented success code for a successfully submitted message/OTP.
+    const providerAccepted = r.ok && providerCode === '1901';
+    console.log('SMS Misr OTP response', {
+      httpStatus: r.status,
+      providerCode: providerCode || null,
+      providerMessage: providerMessage || null,
+      api: useOtpApi ? 'OTP' : 'SMS'
+    });
+    if (!providerAccepted) {
+      console.error('SMS Misr OTP rejected', {httpStatus:r.status, providerCode:providerCode||null, providerMessage:providerMessage||null});
+      throw new Error(`تعذر إرسال رمز التحقق عبر SMS Misr${providerCode ? ` (${providerCode})` : ''}`);
     }
-    return {sent:true, provider:'smsmisr', providerCode};
+    return {sent:true, provider:'smsmisr', providerCode, providerMessage};
   }
   const webhook = process.env.OTP_WEBHOOK_URL;
   if (webhook) {

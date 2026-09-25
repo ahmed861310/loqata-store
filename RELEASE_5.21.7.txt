@@ -1,0 +1,7 @@
+Loqata Store v5.21.7
+
+- Validates the actual SMS Misr provider response instead of treating HTTP 200 alone as success.
+- Accepts provider code 1901 as successful submission.
+- Logs safe diagnostic fields only: HTTP status, provider code/message, and API type.
+- Does not log phone numbers, OTP codes, usernames, or passwords.
+- Updates visible frontend/backend version metadata to 5.21.7.
