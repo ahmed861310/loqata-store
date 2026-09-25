@@ -1,0 +1,7 @@
+Loqata v5.21.17
+- Fixed checkout customer field source mismatch.
+- Submit reads the visible checkout name/phone/address/shipping fields directly.
+- Added precise validation messages per missing field.
+- Kept backend stock/order validation.
+- No SMS/OTP.
+- 16/16 E2E tests passed.

@@ -1,0 +1,10 @@
+{
+  "version": "5.21.17",
+  "root_cause": "checkout submit fields and account-profile snapshot were mixed",
+  "checkout_visible_fields_canonical": true,
+  "field_ids_verified": 5,
+  "javascript_syntax": "PASS",
+  "e2e": "16/16 PASS",
+  "inventory_false_block": "REMOVED",
+  "sms_otp": "REMOVED"
+}

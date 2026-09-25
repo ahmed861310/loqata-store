@@ -188,20 +188,9 @@ async function openCheckout(){
   }catch(err){
     console.warn("Pre-checkout catalogue refresh skipped:",err);
   }
-  // Snapshot the account form BEFORE any async work. This is the canonical source
-  // when the customer has just saved/edited their data on this page.
-  const accountSnapshot={
-    name:String($("accountName")?.value||"").trim(),
-    phone:String($("accountPhone")?.value||"").trim(),
-    address:String($("accountAddress")?.value||"").trim()
-  };
-  const stored=getSavedCustomer();
-  customer={
-    name:accountSnapshot.name||stored.name||"",
-    phone:accountSnapshot.phone||stored.phone||"",
-    address:accountSnapshot.address||stored.address||""
-  };
-  if(customer.name||customer.phone||customer.address) saveCustomer();
+  // Checkout fields are populated from the saved customer.
+  // The visible checkout form itself is the canonical source when submitting.
+  customer={...getSavedCustomer()};
   await loadShippingSettings();
   selectedCoupon=null; $("couponCode").value=""; if($("redeemPoints")) $("redeemPoints").value=0;
   loadLoyalty(); $("couponMessage").textContent="";
@@ -319,7 +308,24 @@ $("clearFiltersBtn")?.addEventListener("click",()=>{minPriceFilter="";maxPriceFi
 $("closeAccount")?.addEventListener("click",closeAccount);$("accountOverlay")?.addEventListener("click",closeAccount);
 document.addEventListener("click",e=>{if(!e.target.closest(".topbar-actions"))closeSettingsMenu();});
 $("closeProduct").addEventListener("click",closeProductDetails);$("productOverlay").addEventListener("click",closeProductDetails);$("cartBtn").addEventListener("click",openCart);$("closeCart").addEventListener("click",closeCart);$("cartOverlay").addEventListener("click",closeCart);$("saveCart").addEventListener("click",()=>{saveCart();toast("تم حفظ السلة على هذا الجهاز");});$("orderWhatsApp").addEventListener("click",openCheckout);$("closeCheckout").addEventListener("click",closeCheckout);$("checkoutOverlay").addEventListener("click",closeCheckout);
-$("checkoutForm").addEventListener("submit",async e=>{e.preventDefault();const name=$("customerName").value.trim(),phone=$("customerPhone").value.trim(),address=$("customerAddress").value.trim(),couponCode=$("couponCode")?.value.trim().toUpperCase()||"";if(!name||!phone||!address||!$("shippingZone").value)return toast("من فضلك أكمل بيانات الطلب واختر منطقة التوصيل");customer={name,phone,address};saveCustomer();const pointsToRedeem=Number($("redeemPoints")?.value||0);checkoutState={paymentMethod:document.querySelector("input[name=paymentMethod]:checked")?.value||"cod"};return sendOrder(name,phone,address,couponCode,pointsToRedeem);});
+$("checkoutForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const name=String($("customerName")?.value||"").trim();
+  const phone=String($("customerPhone")?.value||"").replace(/\s+/g,"").trim();
+  const address=String($("customerAddress")?.value||"").trim();
+  const shippingZone=String($("shippingZone")?.value||"").trim();
+  const couponCode=String($("couponCode")?.value||"").trim().toUpperCase();
+  if(!name) return toast("اكتب الاسم الكامل");
+  if(!phone) return toast("اكتب رقم الهاتف");
+  if(!/^01\d{9}$/.test(phone.replace(/\D/g,""))) return toast("رقم الهاتف يجب أن يكون 11 رقمًا ويبدأ بـ 01");
+  if(!shippingZone) return toast("اختر منطقة التوصيل");
+  if(!address) return toast("اكتب عنوان التوصيل");
+  customer={name,phone:phone.replace(/\D/g,""),address};
+  saveCustomer();
+  const pointsToRedeem=Number($("redeemPoints")?.value||0);
+  checkoutState={paymentMethod:document.querySelector("input[name=paymentMethod]:checked")?.value||"cod"};
+  return sendOrder(customer.name,customer.phone,customer.address,couponCode,pointsToRedeem);
+});
 $("shippingZone")?.addEventListener("change",updateCheckoutSummary);
 $("shippingZone")?.addEventListener("change",()=>updateCheckoutSummary());
 $("applyCouponBtn")?.addEventListener("click",async()=>{const code=$("couponCode").value.trim().toUpperCase();if(!code){selectedCoupon=null;$("couponMessage").textContent="";updateCheckoutSummary();return;}try{selectedCoupon=await apiRequest("/api/coupons/validate",{method:"POST",body:JSON.stringify({code,subtotal:checkoutSubtotal()})});$("couponMessage").textContent=`تم تطبيق ${selectedCoupon.label||"الخصم"}: -${money(selectedCoupon.discount)}`;updateCheckoutSummary();}catch(err){selectedCoupon=null;$("couponMessage").textContent=err.message;updateCheckoutSummary();}});
