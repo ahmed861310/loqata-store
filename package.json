@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.21.8",
+  "version": "5.21.9",
   "private": true,
-  "description": "Loqata Store v5.21.8 — SMS Misr provider-response validation + diagnostics",
+  "description": "Loqata Store v5.21.9 — no SMS / no OTP checkout flow",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",

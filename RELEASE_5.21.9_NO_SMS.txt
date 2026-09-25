@@ -1,0 +1,6 @@
+Loqata v5.21.9 — No SMS / No OTP
+
+- Checkout no longer calls the OTP/SMS flow.
+- COD orders no longer require an OTP verification token on the backend.
+- Existing OTP endpoints remain dormant for backward compatibility; checkout does not use them.
+- Card payment login requirement remains unchanged.
