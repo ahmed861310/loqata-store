@@ -1,0 +1,5 @@
+Loqata v5.21.19
+Date display only.
+Backend unchanged.
+Checkout/order flow unchanged.
+E2E 16/16 PASS.
