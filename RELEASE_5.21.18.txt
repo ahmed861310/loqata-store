@@ -1,0 +1,9 @@
+Loqata v5.21.18
+Checkout completion fix:
+- Order payload reads and normalizes visible customer data.
+- Order items use the persisted cart as fallback.
+- Backend returns specific validation errors instead of generic incomplete-data error.
+- Cancelling/closing checkout does not clear the cart.
+- COD/WhatsApp flow does not clear cart merely because WhatsApp was opened.
+- Existing backend E2E suite: 16/16 PASS.
+- JavaScript syntax checks: PASS.

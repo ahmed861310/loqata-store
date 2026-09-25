@@ -221,7 +221,10 @@ if(req.method==='GET'&&url==='/api/admin/reviews'){const db=readDb();return json
   }
   if(req.method==='POST'&&url==='/api/orders'){
     const u=currentUser(req); const b=await body(req);
-    if(!b.name||!b.phone||!b.address||!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'بيانات الطلب غير مكتملة'});
+    if(!String(b.name||'').trim())return json(res,400,{error:'اسم العميل غير موجود في الطلب'});
+    if(!String(b.phone||'').trim())return json(res,400,{error:'رقم الهاتف غير موجود في الطلب'});
+    if(!String(b.address||'').trim())return json(res,400,{error:'عنوان التوصيل غير موجود في الطلب'});
+    if(!Array.isArray(b.items)||!b.items.length)return json(res,400,{error:'لا توجد منتجات صالحة داخل الطلب'});
     const paymentMethod=String(b.paymentMethod||'cod');
     if(!['cod','card'].includes(paymentMethod))return json(res,400,{error:'طريقة الدفع غير صالحة'});
     const normalizedPhone=normalizePhone(b.phone); if(!/^01\d{9}$/.test(normalizedPhone))return json(res,400,{error:'رقم الهاتف غير صحيح'});

@@ -202,12 +202,42 @@ async function openCheckout(){
   updateCheckoutSummary();
 }
 function closeCheckout(){$("checkoutModal").hidden=true;$("checkoutOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
-async function sendOrder(name,phone,address,couponCode="",pointsToRedeem=0){customer={name,phone,address};saveCustomer();const paymentMethod=checkoutState.paymentMethod||"cod";if(paymentMethod==="card"&&!authenticatedUser){toast("سجّل الدخول أولًا لاستخدام الدفع الإلكتروني");showAuth();return;}const order={name,phone,address,shippingZone:$('shippingZone').value,paymentMethod,items:cart.map(i=>({id:i.id,qty:i.qty})),couponCode,pointsToRedeem:Number(pointsToRedeem||0)};try{const saved=await apiRequest('/api/orders',{method:'POST',body:JSON.stringify(order)});orders.unshift(saved);saveOrders();const fresh=await apiRequest('/api/products');if(Array.isArray(fresh)){products=fresh;saveProducts();}if(paymentMethod==='card'){const intent=await apiRequest('/api/payments/intents',{method:'POST',body:JSON.stringify({paymentMethod:'card',orderId:saved.id,amount:saved.total,billingData:{name,phone,address},items:saved.items||[]})});cart=[];saveCart();renderProducts();renderCart();closeCheckout();if(intent.provider==='demo'){openDemoPayment(saved);}else if(intent.checkoutUrl){window.location.href=intent.checkoutUrl;}return;}const lines=(saved.items||[]).map(i=>`- ${i.name} × ${i.qty} = ${money(i.qty*i.price)}`);const message=`مرحبًا، أريد تأكيد طلبي من متجر لقطة:
+async function sendOrder(name,phone,address,couponCode="",pointsToRedeem=0){
+  const cleanName=String(name||"").trim();
+  const cleanPhone=String(phone||"").replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/\D/g,"");
+  const cleanAddress=String(address||"").trim();
+  const shippingZone=String($("shippingZone")?.value||"").trim();
+  const storedCart=readJson("loqataCart",cart);
+  const sourceCart=Array.isArray(storedCart)&&storedCart.length?storedCart:cart;
+  const items=sourceCart.map(i=>({id:i?.id,qty:Number(i?.qty)})).filter(i=>i.id!==undefined&&i.id!==null&&Number.isInteger(i.qty)&&i.qty>0);
+  if(!cleanName)return toast("اكتب الاسم الكامل");
+  if(!/^01\d{9}$/.test(cleanPhone))return toast("رقم الهاتف يجب أن يكون 11 رقمًا ويبدأ بـ 01");
+  if(!shippingZone)return toast("اختر منطقة التوصيل");
+  if(!cleanAddress)return toast("اكتب عنوان التوصيل");
+  if(!items.length)return toast("السلة فارغة. أضف منتجًا قبل تأكيد الطلب");
+  customer={name:cleanName,phone:cleanPhone,address:cleanAddress};saveCustomer();
+  const paymentMethod=checkoutState.paymentMethod||"cod";
+  if(paymentMethod==="card"&&!authenticatedUser){toast("سجّل الدخول أولًا لاستخدام الدفع الإلكتروني");showAuth();return;}
+  const order={name:cleanName,phone:cleanPhone,address:cleanAddress,shippingZone,paymentMethod,items,couponCode:String(couponCode||"").trim().toUpperCase(),pointsToRedeem:Number(pointsToRedeem||0)};
+  try{
+    const saved=await apiRequest("/api/orders",{method:"POST",body:JSON.stringify(order)});
+    orders.unshift(saved);saveOrders();
+    try{const fresh=await apiRequest("/api/products");if(Array.isArray(fresh)){products=fresh;saveProducts();renderProducts();}}catch{}
+    if(paymentMethod==="card"){
+      const intent=await apiRequest("/api/payments/intents",{method:"POST",body:JSON.stringify({paymentMethod:"card",orderId:saved.id,amount:saved.total,billingData:{name:cleanName,phone:cleanPhone,address:cleanAddress},items:saved.items||[]})});
+      // Keep the cart until payment is actually completed. Cancelling payment must not destroy it.
+      closeCheckout();
+      if(intent.provider==="demo"){openDemoPayment(saved);}
+      else if(intent.checkoutUrl){window.location.href=intent.checkoutUrl;}
+      return;
+    }
+    const lines=(saved.items||[]).map(i=>`- ${i.name} × ${i.qty} = ${money(i.qty*i.price)}`);
+    const message=`مرحبًا، أريد تأكيد طلبي من متجر لقطة:
 
-الاسم: ${name}
-الهاتف: ${phone}
-العنوان: ${address}
-منطقة التوصيل: ${saved.shippingZoneName||''}
+الاسم: ${cleanName}
+الهاتف: ${cleanPhone}
+العنوان: ${cleanAddress}
+منطقة التوصيل: ${saved.shippingZoneName||""}
 طريقة الدفع: الدفع عند الاستلام
 
 المنتجات:
@@ -215,8 +245,17 @@ ${lines.join("\n")}
 
 الإجمالي قبل الخصم: ${money(saved.subtotal)}
 الخصم: -${money(saved.discount)}
-الشحن: ${saved.shippingFee===0?'مجاني':money(saved.shippingFee)}
-الإجمالي النهائي: ${money(saved.total)}`;const whatsappUrl=`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;cart=[];saveCart();renderProducts();renderCart();toast('تم حفظ الطلب وتجهيزه لواتساب');closeCheckout();window.location.href=whatsappUrl;}catch(err){toast(err.message);}}
+الشحن: ${saved.shippingFee===0?"مجاني":money(saved.shippingFee)}
+الإجمالي النهائي: ${money(saved.total)}`;
+    const whatsappUrl=`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    // Do NOT clear cart here: the customer may cancel WhatsApp/share after the order screen opens.
+    toast("تم حفظ الطلب بنجاح");
+    closeCheckout();
+    window.location.href=whatsappUrl;
+  }catch(err){
+    toast(err.message||"تعذر إنشاء الطلب");
+  }
+}
 function openDemoPayment(order){window.__demoOrder=order;$("paymentDemoText").textContent=`طلب #${order.id} — ${money(order.total)}. هذه محاكاة فقط.`;$("paymentDemoModal").hidden=false;$("paymentDemoOverlay").classList.remove('hidden');document.body.classList.add('modal-open');}
 async function completeDemoPayment(success){try{const r=await apiRequest('/api/payments/demo/complete',{method:'POST',body:JSON.stringify({orderId:window.__demoOrder.id,success})});orders=orders.map(o=>o.id===r.order.id?r.order:o);saveOrders();$("paymentDemoModal").hidden=true;$("paymentDemoOverlay").classList.add('hidden');document.body.classList.remove('modal-open');toast(success?'تمت محاكاة الدفع بنجاح — الطلب قيد التجهيز':'تمت محاكاة فشل الدفع — الطلب ملغي');}catch(err){toast(err.message);}}
 
