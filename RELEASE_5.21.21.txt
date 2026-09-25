@@ -1,0 +1,9 @@
+Loqata v5.21.21
+Inventory cancellation safety fix.
+- Cancelling an active order restores its reserved/deducted stock exactly once.
+- Repeating cancelled status does not restore twice.
+- Deleting an active order restores stock.
+- Deleting an already-cancelled/restored order does not restore twice.
+- Checkout flow unchanged from v5.21.20.
+- Existing E2E: 16/16 PASS.
+- Real HTTP stock lifecycle test: PASS.
