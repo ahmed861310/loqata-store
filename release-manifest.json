@@ -1,7 +1,7 @@
 {
   "name": "Loqata Store",
-  "version": "5.19.9",
-  "focus": "Admin secure logout release rebuild",
+  "version": "5.20.0",
+  "focus": "Cart persistence + customer checkout autofill + admin logout hardfix",
   "paymob_mode": "test",
   "real_credentials_included": false,
   "e2e_tests": 19,
