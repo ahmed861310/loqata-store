@@ -1,0 +1,5 @@
+Loqata v5.21.20
+Exact admin order-card date display fix.
+Based on stable 5.21.18.
+Backend unchanged; checkout/order flow unchanged.
+E2E 16/16 PASS.
