@@ -1,8 +1,8 @@
 {
   "name": "loqata-store-backend",
-  "version": "5.19.7",
+  "version": "5.19.8",
   "private": true,
-  "description": "Loqata Store v5.19.7 — secure admin logout release rebuild",
+  "description": "Loqata Store v5.19.8 — secure admin logout release rebuild",
   "scripts": {
     "start": "node server.js",
     "test:paymob": "node scripts/paymob-test.js",

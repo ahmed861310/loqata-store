@@ -151,6 +151,11 @@ async function loadAdminReviews(){const box=$("adminReviews");if(!box)return;try
 async function loadAdminQuestions(){const box=$("adminQuestions");if(!box)return;try{const qs=await apiRequest('/api/admin/questions');box.innerHTML=qs.length?qs.map(q=>`<div class="admin-product-card question-admin-card"><div><strong>${escapeHtml(q.productName)}</strong><p>❓ ${escapeHtml(q.text)}</p>${q.answer?`<p>💬 <strong>الإجابة:</strong> ${escapeHtml(q.answer)}</p>`:''}<small>العميل: ${escapeHtml(q.customerName||'')} | ${new Date(q.createdAt).toLocaleString('ar-EG')} | الحالة: ${q.status==='answered'?'تمت الإجابة':q.status==='hidden'?'مخفي':'قيد الانتظار'}</small></div><div class="admin-actions"><textarea rows="2" data-question-answer="${escapeHtml(q.id)}" placeholder="اكتب الإجابة هنا">${escapeHtml(q.answer||'')}</textarea><button type="button" data-answer-question="${escapeHtml(q.id)}">${q.answer?'تحديث الإجابة':'إرسال الإجابة'}</button><button type="button" data-question-status="hidden" data-question-id="${escapeHtml(q.id)}">إخفاء</button><button type="button" class="danger-btn" data-delete-question="${escapeHtml(q.id)}">حذف</button></div></div>`).join(''):'<p class="empty">لا توجد أسئلة.</p>';}catch(e){box.innerHTML=`<p class="empty">${escapeHtml(e.message)}</p>`;}}
 function renderAdmin(){loadAdminCoupons();loadAdminShipping();loadAdminNotifications();loadNotificationSettings();loadAdminCampaigns();loadAdminLoyalty();loadAdminReviews();loadAdminQuestions();const revenue=orders.reduce((s,o)=>s+Number(o.total||0),0);$("adminStats").innerHTML=`<div>عدد المنتجات: <strong>${products.length}</strong></div><div>عدد الطلبات: <strong>${orders.length}</strong></div><div>إجمالي الطلبات: <strong>${money(revenue)}</strong></div><div>طلبات جديدة: <strong>${orders.filter(o=>o.status==="جديد").length}</strong></div>`;renderInsights();$("adminProducts").innerHTML=products.map(p=>`<div class="admin-product-card"><div class="admin-product-grid"><div class="admin-product-preview">${visualMarkup(p,"admin-product-image")}<strong>${escapeHtml(p.name)}</strong></div><label>الاسم<input data-field="name" data-product-id="${p.id}" value="${escapeHtml(p.name)}"></label><label>السعر الأصلي<input type="number" min="0" data-field="price" data-product-id="${p.id}" value="${p.price}"></label><label>سعر العرض<input type="number" min="0" data-field="salePrice" data-product-id="${p.id}" value="${p.salePrice||''}" placeholder="اختياري"></label><label>نهاية العرض<input type="datetime-local" data-field="offerEndsAt" data-product-id="${p.id}" value="${p.offerEndsAt?String(p.offerEndsAt).slice(0,16):''}"></label><label>المخزون<input type="number" min="0" data-field="stock" data-product-id="${p.id}" value="${Number(p.stock??0)}"></label><label>القسم<select data-field="category" data-product-id="${p.id}"><option value="electronics" ${p.category==='electronics'?'selected':''}>إلكترونيات</option><option value="fashion" ${p.category==='fashion'?'selected':''}>ملابس</option><option value="home" ${p.category==='home'?'selected':''}>المنزل</option></select></label><label>الإيموجي<input data-field="emoji" data-product-id="${p.id}" value="${escapeHtml(p.emoji||'🛍️')}"></label><label class="wide-field">رابط الصورة<input type="url" data-field="image" data-product-id="${p.id}" value="${escapeHtml(p.image||'')}" placeholder="https://..."></label><label class="wide-field">الوصف<textarea data-field="description" data-product-id="${p.id}" rows="2">${escapeHtml(p.description||'')}</textarea></label></div><div class="admin-actions"><button type="button" data-save-product="${p.id}">حفظ التعديلات</button><button type="button" class="danger-btn" data-delete-product="${p.id}">حذف المنتج</button></div></div>`).join("");$("adminCoupons").innerHTML=adminCoupons.length?adminCoupons.map(c=>`<div class="admin-product-card"><strong>${escapeHtml(c.code)}</strong> — ${c.type==='percent'?c.value+'%':money(c.value)}<p>${escapeHtml(c.label||'خصم')} | الحد الأدنى: ${money(c.minSubtotal||0)} | الانتهاء: ${escapeHtml(c.expiresAt||'بدون')}</p><button type="button" class="danger-btn" data-delete-coupon="${c.id}">حذف الكوبون</button></div>`).join(""):`<p class="empty">لا توجد كوبونات.</p>`;const filter=$("orderStatusFilter")?.value||"all";const visible=orders.filter(o=>(filter==="all"||o.status===filter)&&(!adminOrderQuery||`${o.id} ${o.name} ${o.phone}`.toLowerCase().includes(adminOrderQuery)));$("adminOrders").innerHTML=visible.length?visible.map(o=>`<details class="order-card"><summary>#${o.id} — ${escapeHtml(o.name)} — ${money(o.total)} — <span class="status-pill status-${o.status==='جديد'?'new':o.status==='مكتمل'?'done':o.status==='ملغي'?'cancelled':'progress'}">${escapeHtml(o.status||'جديد')}</span></summary><p>الهاتف: ${escapeHtml(o.phone)}<br>العنوان: ${escapeHtml(o.address)}<br>التاريخ: ${escapeHtml(o.date)}</p><div>${(o.items||[]).map(i=>`<div>${escapeHtml(i.name)} × ${i.qty} — ${money(i.qty*i.price)}</div>`).join("")}</div><label class="order-status-editor">حالة الطلب<select data-order-status-select="${o.id}"><option ${o.status==='جديد'?'selected':''}>جديد</option><option ${o.status==='قيد التجهيز'?'selected':''}>قيد التجهيز</option><option ${o.status==='تم الشحن'?'selected':''}>تم الشحن</option><option ${o.status==='مكتمل'?'selected':''}>مكتمل</option><option ${o.status==='ملغي'?'selected':''}>ملغي</option></select></label><button type="button" class="danger-btn" data-delete-order="${o.id}">حذف الطلب</button></details>`).join(""):`<p class="empty">لا توجد طلبات بهذه الحالة.</p>`;}
 async function openAdmin(){
+  // After an explicit admin logout, never trust a stale cross-origin cookie to reopen
+  // the dashboard. A successful admin login clears this marker.
+  if(localStorage.getItem("loqataAdminLoggedOut")==="1"){
+    $("adminEmail").value="";$("adminPassword").value="";$("adminLoginMessage").textContent="";$("adminBootstrapBtn").dataset.mode="login";$("adminLoginTitle").textContent="🔐 دخول الإدارة";$("adminLoginForm")?.querySelector("button[type=submit]") && ($("adminLoginForm").querySelector("button[type=submit]").textContent="دخول الإدارة");$("adminBootstrapBtn").textContent="إنشاء حساب المدير لأول مرة";$("adminLoginModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");return;
+  }
   try{
     const me=await apiRequest('/api/auth/me');
     if(me.user?.role==='admin'){adminUser=me.user;adminUnlocked=true;renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");return;}
@@ -159,22 +164,27 @@ async function openAdmin(){
 }
 function closeAdminLogin(){$("adminLoginModal").hidden=true;if($("adminModal").hidden)$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
 function closeAdmin(){$("adminModal").hidden=true;$("adminOverlay").classList.add("hidden");document.body.classList.remove("modal-open");}
-async function logoutAdmin(){
+function logoutAdmin(){
   const btn=$("adminLogoutBtn");
   if(btn){btn.disabled=true;btn.textContent="جارٍ تسجيل الخروج...";}
-  try{
-    await apiRequest('/api/auth/logout',{method:'POST'});
-  }catch(err){
-    console.warn('Admin logout request failed',err);
-  }finally{
-    adminUser=null;
-    adminUnlocked=false;
-    authenticatedUser=null;
-    closeAdminOrderDetails();
-    closeAdmin();
-    if(btn){btn.disabled=false;btn.textContent="🚪 تسجيل خروج المدير";}
-    toast('تم تسجيل خروج المدير بأمان');
-  }
+
+  // Log out in the UI immediately. Do not make the user wait for Railway/CORS/network.
+  adminUser=null;
+  adminUnlocked=false;
+  authenticatedUser=null;
+  localStorage.setItem("loqataAdminLoggedOut","1");
+  closeAdminOrderDetails();
+  closeAdmin();
+  if(btn){btn.disabled=false;btn.textContent="🚪 تسجيل خروج المدير";}
+  toast("تم تسجيل خروج المدير");
+
+  // Best-effort server logout with a short timeout. The local logout above is authoritative
+  // for dashboard access, so a slow/unreachable backend can no longer freeze the button.
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),2500);
+  fetch(apiUrl('/api/auth/logout'),{method:'POST',credentials:'include',signal:controller.signal})
+    .catch(err=>console.warn('Background admin logout failed',err))
+    .finally(()=>clearTimeout(timer));
 }
 $("adminLogoutBtn")?.addEventListener("click",logoutAdmin);
 
@@ -202,7 +212,7 @@ $("shippingZone")?.addEventListener("change",()=>updateCheckoutSummary());
 $("applyCouponBtn")?.addEventListener("click",async()=>{const code=$("couponCode").value.trim().toUpperCase();if(!code){selectedCoupon=null;$("couponMessage").textContent="";updateCheckoutSummary();return;}try{selectedCoupon=await apiRequest("/api/coupons/validate",{method:"POST",body:JSON.stringify({code,subtotal:checkoutSubtotal()})});$("couponMessage").textContent=`تم تطبيق ${selectedCoupon.label||"الخصم"}: -${money(selectedCoupon.discount)}`;updateCheckoutSummary();}catch(err){selectedCoupon=null;$("couponMessage").textContent=err.message;updateCheckoutSummary();}});
 $("closeAdmin").addEventListener("click",closeAdmin);$("adminOverlay").addEventListener("click",()=>{closeAdmin();closeAdminLogin();});
 $("closeAdminLogin")?.addEventListener("click",closeAdminLogin);
-$("adminLoginForm")?.addEventListener("submit",async e=>{e.preventDefault();const msg=$("adminLoginMessage"),creating=$("adminBootstrapBtn")?.dataset.mode==="create";msg.textContent=creating?"جارٍ إنشاء حساب المدير...":"جارٍ التحقق...";try{const result=await apiRequest(creating?"/api/admin/bootstrap":"/api/auth/login",{method:"POST",body:JSON.stringify({name:"مدير لقطة",email:$("adminEmail").value.trim(),password:$("adminPassword").value})});if(!creating&&result.user?.role!=="admin")throw new Error("هذا الحساب ليس حساب مدير");adminUser=result.user;adminUnlocked=true;closeAdminLogin();renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");toast(creating?"تم إنشاء حساب المدير وتسجيل الدخول":"تم تسجيل دخول الإدارة");}catch(err){msg.textContent=err.message|| (creating?"تعذر إنشاء حساب المدير":"تعذر تسجيل الدخول");}});
+$("adminLoginForm")?.addEventListener("submit",async e=>{e.preventDefault();const msg=$("adminLoginMessage"),creating=$("adminBootstrapBtn")?.dataset.mode==="create";msg.textContent=creating?"جارٍ إنشاء حساب المدير...":"جارٍ التحقق...";try{const result=await apiRequest(creating?"/api/admin/bootstrap":"/api/auth/login",{method:"POST",body:JSON.stringify({name:"مدير لقطة",email:$("adminEmail").value.trim(),password:$("adminPassword").value})});if(!creating&&result.user?.role!=="admin")throw new Error("هذا الحساب ليس حساب مدير");adminUser=result.user;adminUnlocked=true;localStorage.removeItem("loqataAdminLoggedOut");closeAdminLogin();renderAdmin();$("adminModal").hidden=false;$("adminOverlay").classList.remove("hidden");document.body.classList.add("modal-open");toast(creating?"تم إنشاء حساب المدير وتسجيل الدخول":"تم تسجيل دخول الإدارة");}catch(err){msg.textContent=err.message|| (creating?"تعذر إنشاء حساب المدير":"تعذر تسجيل الدخول");}});
 $("adminBootstrapBtn")?.addEventListener("click",()=>{
   const title=$("adminLoginTitle"), submit=$("adminLoginForm")?.querySelector("button[type=submit]"), btn=$("adminBootstrapBtn"), msg=$("adminLoginMessage");
   const creating=btn.dataset.mode!=="create";
