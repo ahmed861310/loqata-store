@@ -63,6 +63,12 @@ function getSavedCustomer(){
     phone=phone||String(localStorage.getItem("loqataCustomerPhone")||"").trim();
     address=address||String(localStorage.getItem("loqataCustomerAddress")||"").trim();
   }catch{}
+  try{
+    const session=JSON.parse(sessionStorage.getItem("loqataCustomer")||"{}");
+    name=name||String(session?.name||"").trim();
+    phone=phone||String(session?.phone||"").trim();
+    address=address||String(session?.address||"").trim();
+  }catch{}
   return {
     name:name||String(customer?.name||"").trim(),
     phone:phone||String(customer?.phone||"").trim(),
@@ -70,12 +76,24 @@ function getSavedCustomer(){
   };
 }
 function fillCheckoutFromSavedCustomer(){
-  const saved=getSavedCustomer();
+  const stored=getSavedCustomer();
+  // The account form is the strongest source while the page is open. This also
+  // covers browsers that restrict storage writes.
+  const account={
+    name:String($("accountName")?.value||"").trim(),
+    phone:String($("accountPhone")?.value||"").trim(),
+    address:String($("accountAddress")?.value||"").trim()
+  };
+  const saved={
+    name:account.name||stored.name||"",
+    phone:account.phone||stored.phone||"",
+    address:account.address||stored.address||""
+  };
   customer={...saved};
   const nameEl=$("customerName"), phoneEl=$("customerPhone"), addressEl=$("customerAddress");
-  if(nameEl) nameEl.value=saved.name||"";
-  if(phoneEl) phoneEl.value=saved.phone||"";
-  if(addressEl) addressEl.value=saved.address||"";
+  if(nameEl) nameEl.value=saved.name;
+  if(phoneEl) phoneEl.value=saved.phone;
+  if(addressEl) addressEl.value=saved.address;
 }
 async function loadLoyalty(){try{loyalty=await apiRequest('/api/loyalty');}catch{loyalty={points:0,config:{pointsPerCurrency:0.1,pointValue:1,minRedeem:10}};} const p=$('loyaltyPoints');if(p)p.textContent=Number(loyalty.points||0).toLocaleString('ar-EG'); const r=$('redeemPoints');if(r){r.max=String(Math.floor(loyalty.points||0));r.value=Math.min(Number(r.value||0),Number(loyalty.points||0));} updateCheckoutSummary();}
 async function loadNotifications(){const box=$("accountNotifications");if(!box)return;try{const data=await apiRequest('/api/notifications');const notes=data.items||[];box.innerHTML=notes.length?notes.map(n=>`<div class="notification-card ${n.read?'read':'unread'}"><div><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p><small>${escapeHtml(new Date(n.createdAt).toLocaleString('ar-EG'))}</small></div>${n.read?'':'<button type="button" class="secondary-btn small-btn" data-read-notification="'+escapeHtml(n.id)+'">تمت القراءة</button>'}</div>`).join(''):'<p class="empty">لا توجد إشعارات حتى الآن.</p>';const badge=$("notificationBadge");if(badge){badge.textContent=data.unread||0;badge.hidden=!(data.unread>0);}}catch(e){box.innerHTML='<p class="empty">سجّل الدخول لعرض الإشعارات.</p>';}}
@@ -438,7 +456,14 @@ async function openCustomerAccount(){
 }
 $("closeAccount")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
 $("accountOverlay")?.addEventListener('click',()=>{$("accountModal").hidden=true;$('accountOverlay').classList.add('hidden');document.body.classList.remove('modal-open');});
-$("accountForm")?.addEventListener('submit',e=>{e.preventDefault();customer={name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();fillCheckoutFromSavedCustomer();toast('تم حفظ البيانات وستظهر تلقائيًا في الطلب');});
+$("accountForm")?.addEventListener('submit',e=>{
+  e.preventDefault();
+  customer={name:$("accountName").value.trim(),phone:$("accountPhone").value.trim(),address:$("accountAddress").value.trim()};
+  saveCustomer();
+  try{sessionStorage.setItem("loqataCustomer",JSON.stringify(customer));}catch{}
+  fillCheckoutFromSavedCustomer();
+  toast("تم حفظ البيانات وستظهر تلقائيًا في الطلب");
+});
 ['accountName','accountPhone','accountAddress'].forEach(id=>$(id)?.addEventListener('input',()=>{customer={name:$('accountName').value.trim(),phone:$('accountPhone').value.trim(),address:$('accountAddress').value.trim()};saveCustomer();}));
 const previousHandleSetting=handleSetting;
 handleSetting=function(action){if(action==='account'){openCustomerAccount();return;}return previousHandleSetting(action);};
