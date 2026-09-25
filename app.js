@@ -467,13 +467,13 @@ loadAuth();
     const remote=await apiRequest("/api/products");
     if(!Array.isArray(remote)) throw new Error("استجابة المنتجات غير صالحة");
     // An empty backend database must not blank the public storefront.
-    products=remote.length ? remote : defaultProducts;
+    products=remote;
     saveProducts();
     renderProducts();
     loadRecommendations();
   }catch(err){
     console.warn("تعذر الاتصال بقاعدة البيانات",err.message);
-    if(!Array.isArray(products)||!products.length) products=defaultProducts;
+    if(!Array.isArray(products)) products=[];
     renderProducts();
     loadRecommendations();
   }

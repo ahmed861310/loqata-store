@@ -1,0 +1,5 @@
+Loqata v5.21.11
+- Backend is the canonical catalogue/inventory source.
+- Existing Railway databases with an uninitialized empty catalogue are seeded once with the default catalogue.
+- Frontend no longer displays default products when the backend successfully returns an empty catalogue.
+- COD remains without SMS/OTP.
