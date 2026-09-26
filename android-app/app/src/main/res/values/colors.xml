@@ -1,0 +1,9 @@
+<resources>
+    <color name="black">#FF202124</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="surface">#FFF6F4EF</color>
+    <color name="surface_soft">#FFFBFAF7</color>
+    <color name="primary">#FF4A5A4F</color>
+    <color name="primary_soft">#FFE9EFEA</color>
+    <color name="muted">#FF747A76</color>
+</resources>

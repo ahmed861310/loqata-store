@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">لقطة</string>
+    <string name="loading">جاري تحميل المنتجات…</string>
+    <string name="products">المنتجات</string>
+    <string name="search_hint">ابحث بالاسم أو الوصف…</string>
+    <string name="cart">السلة</string>
+    <string name="checkout">إتمام الطلب</string>
+</resources>
