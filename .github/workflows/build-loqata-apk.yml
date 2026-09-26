@@ -41,3 +41,33 @@ jobs:
           name: Loqata-Android-v0.3.1-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Build release APK
+        run: gradle --no-daemon -p android-app assembleRelease
+
+      - name: Sign test release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOQATA_TEST_KEY_PASS="$(openssl rand -hex 24)"
+          export LOQATA_TEST_KEY_PASS
+          keytool -genkeypair -keystore "$RUNNER_TEMP/loqata-test.jks" \
+            -storepass "$LOQATA_TEST_KEY_PASS" -keypass "$LOQATA_TEST_KEY_PASS" \
+            -alias loqata-test -keyalg RSA -keysize 3072 -validity 365 \
+            -dname "CN=Loqata Test Build,O=Loqata" -noprompt
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -f -p 4 \
+            android-app/app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$RUNNER_TEMP/loqata-test-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks "$RUNNER_TEMP/loqata-test.jks" --ks-key-alias loqata-test \
+            --ks-pass env:LOQATA_TEST_KEY_PASS --key-pass env:LOQATA_TEST_KEY_PASS \
+            --out Loqata-Android-v0.3.1-test-signed.apk "$RUNNER_TEMP/loqata-test-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose \
+            Loqata-Android-v0.3.1-test-signed.apk
+
+      - name: Upload signed test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Loqata-Android-v0.3.1-test-signed
+          path: Loqata-Android-v0.3.1-test-signed.apk
+          if-no-files-found: error
